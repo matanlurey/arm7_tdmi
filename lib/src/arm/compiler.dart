@@ -536,97 +536,17 @@ class ArmCompiler {
   }) =>
       const _ArmInstruction$LDR();
 
-  /// Creates a _LDM_ (increment before) instruction.
+  /// Create a _LDR_ (load multiple) instruction.
   ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}IB Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createLDMIncrementBefore({
+  /// Allow between 1 and 16 registers to be transferred from memory.
+  Instruction createLDM({
     ArmCondition cond: ArmCondition.AL,
+    @required bool before,
+    @required bool add,
+    @required bool psr,
+    @required bool writeBack,
+    @required int rn,
     @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (increment after) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}IA Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createLDMIncrementAfter({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (decrement before) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}DB Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createLDMDecrementBefore({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (decrement after) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}DA Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createLDMDecrementAfter({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (stack operation) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}<a_mode4L> Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createLDMStackOperation({
-    ArmCondition cond: ArmCondition.AL,
-    @required int aMode,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (stack operation and restore CPSR) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}<a_mode4L> Rd{!}, <reglist+pc>{^}
-  /// ```
-  Instruction createLDMStackOperationAndRestoreCPSR({
-    ArmCondition cond: ArmCondition.AL,
-    @required int aMode,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$LDM();
-
-  /// Creates a _LDM_ (stack operation with user registers) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDM{cond}<a_mode4L> Rd{!}, <reglist>^
-  /// ```
-  Instruction createLDMStackOperationWithUserRegisters({
-    ArmCondition cond: ArmCondition.AL,
-    @required int aMode,
-    @required int rd,
-    @required List<int> registers,
   }) =>
       const _ArmInstruction$LDM();
 
@@ -683,74 +603,17 @@ class ArmCompiler {
   }) =>
       const _ArmInstruction$STR();
 
-  /// Creates a _STR_ (increment before) instruction.
+  /// Create a _STM_ (store multiple) instruction.
   ///
-  /// Assembly syntax:
-  /// ```
-  /// STM{cond}IB Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createSTMIncrementBefore({
+  /// Allow between 1 and 16 registers to be transferred from memory.
+  Instruction createSTM({
     ArmCondition cond: ArmCondition.AL,
+    @required bool before,
+    @required bool add,
+    @required bool psr,
+    @required bool writeBack,
+    @required int rn,
     @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$STM();
-
-  /// Creates a _STR_ (increment before) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// STM{cond}IA Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createSTMIncrementAfter({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$STM();
-
-  /// Creates a _STR_ (increment before) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// STM{cond}DB Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createSTMDecrementBefore({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$STM();
-
-  /// Creates a _STR_ (increment before) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// STM{cond}DA Rd{!}, <reglist>{^}
-  /// ```
-  Instruction createSTMDecrementAfter({
-    ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required List<int> registers,
-  }) =>
-      const _ArmInstruction$STM();
-
-  /// Creates a _STR_ (increment before) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// STM{cond}<a_mode4S> Rd{!}, <reglist>
-  /// ```
-  ///
-  /// With user registers:
-  /// ```
-  /// STM{cond}<a_mode4S> Rd{!}, <reglist>^
-  /// ```
-  Instruction createSTMStackOperation({
-    ArmCondition cond: ArmCondition.AL,
-    bool withUserRegisters: false,
-    @required int rd,
-    @required List<int> registers,
   }) =>
       const _ArmInstruction$STM();
 
@@ -847,7 +710,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int cpnum,
     @required int crd,
-    @required int aMode,
+    @required int offset,
   }) =>
       const _ArmInstruction$LDC();
 
@@ -861,7 +724,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int cpnum,
     @required int crd,
-    @required int aMode,
+    @required int offset,
   }) =>
       const _ArmInstruction$STC();
 

@@ -288,19 +288,47 @@ class BlockDataTransferFormat extends ArmInstructionFormat {
   @literal
   const BlockDataTransferFormat(int instruction) : super._(instruction);
 
-  int get p => _bit(24);
+  /// Pre/Post-indexing bit.
+  ///
+  /// 0 = Post; add offset after transfer.
+  /// 1 = Pre; add offset before transfer
+  bool get p => _set(24);
 
-  int get u => _bit(23);
+  /// Up/Down bit.
+  ///
+  /// 0 = Down; subtract offset from base.
+  /// 1 = Up; add offset to base.
+  bool get u => _set(23);
 
+  /// PSR and force user bit.
+  ///
+  /// 0 = Don't load PSR or force user mode.
+  /// 1 = Load PSR or force user mode.
   bool get s => _set(22);
 
-  int get w => _bit(21);
+  /// Write-back bit.
+  ///
+  /// 0 = No write-back.
+  /// 1 = Write address into base.
+  bool get w => _set(21);
 
-  int get l => _bit(20);
+  /// Load/Store bit.
+  ///
+  /// 0 = Store to memory.
+  /// 1 = Load from memory.
+  bool get l => _set(20);
 
+  /// Base register.
   int get rn => _range(19, 16);
 
-  List<int> get rd => uint32.toIterable(_range(15, 0)).toList();
+  /// Register list.
+  ///
+  /// Each bit corresponds to particular register. For example:
+  /// * Bit 0 set causes r0 to be transferred.
+  /// * Bit 0 unset causes r0 not to be transferred.
+  ///
+  /// At least one register must be transferred as the list cannot be empty.
+  int get rd => _range(15, 0);
 }
 
 /// Instruction format for Branch.
@@ -338,22 +366,30 @@ class CoprocessorTransferFormat extends ArmInstructionFormat {
   @literal
   const CoprocessorTransferFormat(int instruction) : super._(instruction);
 
-  int get p => _bit(24);
+  /// Pre/Post increment.
+  bool get p => _set(24);
 
-  int get u => _bit(23);
+  /// Add/Subtract offset.
+  bool get u => _set(23);
 
+  /// Transfer length.
   int get n => _bit(22);
 
-  int get w => _bit(21);
+  /// Base register write-back.
+  bool get w => _set(21);
 
-  int get l => _bit(20);
+  /// Load/store.
+  bool get l => _set(20);
 
+  /// Base register.
   int get rn => _range(19, 16);
 
+  /// Source/destination register.
   int get crd => _range(15, 12);
 
-  int get cphash => _range(11, 8);
+  int get cpnum => _range(11, 8);
 
+  /// Address offset.
   int get offset => _range(7, 0);
 }
 

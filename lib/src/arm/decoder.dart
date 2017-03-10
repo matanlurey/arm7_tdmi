@@ -5,9 +5,6 @@ import 'format.dart';
 import 'compiler.dart';
 import 'package:meta/meta.dart';
 
-final _range = uint32.range;
-//bool _match(int format, int mask) => format & mask == mask;
-
 /// Returns some bits from instruction [iw] to be masked.
 ///
 /// **INTERNAL ONLY**.
@@ -83,8 +80,8 @@ class ArmDecoder {
   }
 
   Instruction _decodeSWI(int iw) {
-    // final format = new SoftwareInterruptFormat(iw);
-    throw new UnimplementedError();
+    final format = new SoftwareInterruptFormat(iw);
+    return _compiler.createSWI(cond: format.cond, routine: format.routine);
   }
 
   Instruction _decodeMULL$MLAL(int iw) {
@@ -302,8 +299,28 @@ class ArmDecoder {
   }
 
   Instruction _decodeLDM$STM(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new BlockDataTransferFormat(iw);
+    if (format.l) {
+      return _compiler.createLDM(
+        cond: format.cond,
+        before: format.p,
+        add: format.u,
+        psr: format.s,
+        writeBack: format.w,
+        rn: format.rn,
+        rd: format.rd,
+      );
+    } else {
+      return _compiler.createSTM(
+        cond: format.cond,
+        before: format.p,
+        add: format.u,
+        psr: format.s,
+        writeBack: format.w,
+        rn: format.rn,
+        rd: format.rd,
+      );
+    }
   }
 
   Instruction _decodeB$BL(int iw) {
@@ -314,8 +331,22 @@ class ArmDecoder {
   }
 
   Instruction _decodeLDC$STC(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new CoprocessorTransferFormat(iw);
+    if (format.l) {
+      return _compiler.createLDC(
+        cond: format.cond,
+        cpnum: format.cpnum,
+        crd: format.crd,
+        offset: format.offset,
+      );
+    } else {
+      return _compiler.createSTC(
+        cond: format.cond,
+        cpnum: format.cpnum,
+        crd: format.crd,
+        offset: format.offset,
+      );
+    }
   }
 
   Instruction _decodeMRC$MCR(int iw) {

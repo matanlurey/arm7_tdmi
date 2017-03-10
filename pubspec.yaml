@@ -1,7 +1,7 @@
 name: arm7_tdmi
 description: >
   An emulator for the ARM7/TDMI processor.
-version: 0.0.1-dev+3
+version: 0.0.2
 authors:
   - Matan Lurey <matan@lurey.org>
   - Kendal Harland <kendaljharland@gmail.com>
@@ -17,5 +17,5 @@ dependencies:
 
 dev_dependencies:
   test: '^0.12.18+1'
-  tuple:
+  tuple: '^1.0.1'
 
