@@ -67,7 +67,7 @@ class MultiplyFormat extends ArmInstructionFormat {
   @literal
   const MultiplyFormat(int instruction) : super._(instruction);
 
-  int get a => _bit(21);
+  bool get a => _set(21);
 
   bool get s => _set(20);
 
@@ -95,9 +95,9 @@ class MultiplyLongFormat extends ArmInstructionFormat {
   @literal
   const MultiplyLongFormat(int instruction) : super._(instruction);
 
-  int get u => _bit(22);
+  bool get u => _set(22);
 
-  int get a => _bit(21);
+  bool get a => _set(21);
 
   bool get s => _set(20);
 
@@ -165,17 +165,17 @@ class BranchAndExchangeFormat extends ArmInstructionFormat {
 ///
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
-class TransferRegisterFormat extends ArmInstructionFormat {
+class HalfWordTransferRegisterFormat extends ArmInstructionFormat {
   @literal
-  const TransferRegisterFormat(int instruction) : super._(instruction);
+  const HalfWordTransferRegisterFormat(int instruction) : super._(instruction);
 
-  int get p => _bit(24);
+  bool get p => _set(24);
 
-  int get u => _bit(23);
+  bool get u => _set(23);
 
-  int get w => _bit(21);
+  bool get w => _set(21);
 
-  int get l => _bit(20);
+  bool get l => _set(20);
 
   int get rn => _range(19, 16);
 
@@ -183,7 +183,7 @@ class TransferRegisterFormat extends ArmInstructionFormat {
 
   bool get s => _set(6);
 
-  int get h => _bit(5);
+  bool get h => _set(5);
 
   int get rm => _range(3, 0);
 }

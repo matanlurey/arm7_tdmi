@@ -3,13 +3,6 @@ import 'package:binary/binary.dart';
 
 import 'format.dart';
 import 'compiler.dart';
-import 'package:meta/meta.dart';
-
-/// Returns some bits from instruction [iw] to be masked.
-///
-/// **INTERNAL ONLY**.
-@visibleForTesting
-int compute(int iw) => (iw >> 25) & 0x07;
 
 /// Decodes encoded 32-bit ARMv4t into executable [Instruction] instances.
 class ArmDecoder {
@@ -27,8 +20,6 @@ class ArmDecoder {
   /// Decodes and returns an executable instance from an ARM [iw].
   Instruction decode(int iw) {
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
-    // From https://github.com/smiley22/ARM.JS/blob/gh-pages/Simulator/Cpu.ts.
-    // It would be nice to have some sort of formal explanation for this.
     switch (iw >> 25 & 0x07) {
       case 0:
         if (iw >> 4 & 0x1FFFFF ^ 0x12FFF1 == 0) {
@@ -43,7 +34,7 @@ class ArmDecoder {
                   : _decodeMUL$MLA(iw);
         }
         if (b74 == 0xB || b74 == 0xD || b74 == 0xF) {
-          return _decodeLRDH$STRH$LDRSB$LDRSH(iw);
+          return _decodeLDRH$STRH$LDRSB$LDRSH(iw);
         }
         if (iw >> 23 & 0x03 == 2 && iw >> 20 & 0x01 == 0) {
           return (iw >> 21) & 0x01 != 0 ? _decodeMSR(iw) : _decodeMRS(iw);
@@ -85,33 +76,150 @@ class ArmDecoder {
   }
 
   Instruction _decodeMULL$MLAL(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new MultiplyLongFormat(iw);
+    if (format.a) {
+      if (format.u) {
+        return _compiler.createUMLAL(
+          cond: format.cond,
+          s: format.s,
+          rdLo: format.rdLo,
+          rdHi: format.rdHi,
+          rm: format.rm,
+          rs: format.rs,
+        );
+      } else {
+        return _compiler.createSMLAL(
+          cond: format.cond,
+          s: format.s,
+          rdLo: format.rdLo,
+          rdHi: format.rdHi,
+          rm: format.rm,
+          rs: format.rs,
+        );
+      }
+    } else {
+      if (format.u) {
+        return _compiler.createUMULL(
+          cond: format.cond,
+          s: format.s,
+          rdLo: format.rdLo,
+          rdHi: format.rdHi,
+          rm: format.rm,
+          rs: format.rs,
+        );
+      } else {
+        return _compiler.createSMULL(
+          cond: format.cond,
+          s: format.s,
+          rdLo: format.rdLo,
+          rdHi: format.rdHi,
+          rm: format.rm,
+          rs: format.rs,
+        );
+      }
+    }
   }
 
   Instruction _decodeMUL$MLA(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new MultiplyFormat(iw);
+    if (format.a) {
+      return _compiler.createMLA(
+        cond: format.cond,
+        s: format.s,
+        rd: format.rd,
+        rm: format.rm,
+        rs: format.rs,
+        rn: format.rn,
+      );
+    } else {
+      return _compiler.createMUL(
+        cond: format.cond,
+        s: format.s,
+        rd: format.rd,
+        rs: format.rs,
+        rn: format.rn,
+      );
+    }
   }
 
-  Instruction _decodeLRDH$STRH$LDRSB$LDRSH(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+  Instruction _decodeLDRH$STRH$LDRSB$LDRSH(int iw) {
+    final format = new HalfWordTransferRegisterFormat(iw);
+    if (format.l) {
+      // Load
+      if (format.h) {
+        // Halfword
+        return _compiler.createLDRHalfWord(
+          cond: format.cond,
+          signed: format.s,
+          rd: format.rd,
+          aMode: null,
+        );
+      } else {
+        // Byte
+        return _compiler.createLDRByte(
+          cond: format.cond,
+          signed: format.s,
+          rd: format.rd,
+          aMode: null,
+        );
+      }
+    } else {
+      // Store
+      if (format.s) {
+        if (format.h) {
+          // Signed Halfword
+          return _compiler.createSTRHalfWord(
+            cond: format.cond,
+            rd: format.rd,
+            aMode: null,
+          );
+        } else {
+          // Signed Byte
+          return _compiler.createSTRByte(
+            cond: format.cond,
+            rd: format.rd,
+            aMode: null,
+          );
+        }
+      } else {
+        if (format.h) {
+          // Unsigned Halfword
+          return _compiler.createSTRHalfWord(
+            cond: format.cond,
+            rd: format.rd,
+            aMode: null,
+          );
+        } else {
+          // SWP (???)
+          return _compiler.createSWPByte(
+            cond: format.cond,
+            rd: format.rd,
+            rm: format.rm,
+            rn: format.rn,
+          );
+        }
+      }
+    }
   }
 
+  // Returns a 'Move to Status Register from ARM register' instruction.
   Instruction _decodeMSR(int iw) {
     // TODO: Complete.
     return _compiler.createMSR(
-      cond: new ArmCondition.fromOpcode(uint32.range(iw, 31, 28)),
       spsr: null,
       field: null,
       rm: null,
     );
   }
 
+  // Returns a 'Move PSR to General-purpose Register' instruction.
   Instruction _decodeMRS(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    // TODO: Move and use within a format.
+    return _compiler.createMRS(
+      cond: new ArmCondition.fromOpcode(uint32.range(iw, 31, 28)),
+      spsr: iw >> 22 & 0x1 != 0,
+      rd: iw >> 12 & 0xF,
+    );
   }
 
   Instruction _decodeData(int iw) {
@@ -376,8 +484,8 @@ class ArmDecoder {
     }
   }
 
+  // Returns a 'Coprocessor Data Processing' instruction.
   Instruction _decodeCDP(int iw) {
-    // final format = ...
     throw new UnimplementedError();
   }
 }

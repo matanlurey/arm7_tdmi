@@ -90,7 +90,7 @@ class ArmCompiler {
   /// ```
   Instruction createMRS({
     ArmCondition cond: ArmCondition.AL,
-    bool spsr: false,
+    @required bool spsr,
     @required int rd,
   }) =>
       const _ArmInstruction$MRS();
