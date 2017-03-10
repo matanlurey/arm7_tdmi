@@ -26,7 +26,7 @@ abstract class ArmCondition {
   ///
   /// **INTERNAL ONLY**: Not meant to be used by end-users.
   @visibleForTesting
-  static const all = const<int, ArmCondition> {
+  static const all = const <int, ArmCondition>{
     0x0: EQ,
     0x1: NE,
     0x2: CS,

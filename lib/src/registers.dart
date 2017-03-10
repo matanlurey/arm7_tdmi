@@ -58,7 +58,7 @@ class Registers {
 
   /// Offset values for a given operating [Mode].
   @visibleForTesting
-  static const offsets = const <Mode, int> {
+  static const offsets = const <Mode, int>{
     Mode.fiq: 17,
     Mode.svc: 25,
     Mode.abt: 28,
@@ -128,7 +128,7 @@ class Registers {
   /// Returns a [register] value.
   ///
   /// The memory location accessed is dependent on the operating mode.
-  int operator[](int register) {
+  int operator [](int register) {
     assert(() {
       if (register < 0 || register > 15) {
         throw new RangeError.range(register, 0, 15);
@@ -150,7 +150,7 @@ class Registers {
   /// Sets a [register] [value].
   ///
   /// The memory location accessed is dependent on the operating mode.
-  operator[]=(int register, int value) {
+  operator []=(int register, int value) {
     assert(() {
       if (register < 0 || register > 15) {
         throw new RangeError.range(register, 0, 15);
