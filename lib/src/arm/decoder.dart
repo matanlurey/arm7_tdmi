@@ -1,3 +1,4 @@
+import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:binary/binary.dart';
 
 import 'format.dart';
@@ -31,23 +32,23 @@ class ArmDecoder {
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
     // From https://github.com/smiley22/ARM.JS/blob/gh-pages/Simulator/Cpu.ts.
     // It would be nice to have some sort of formal explanation for this.
-    switch ((iw >> 25) & 0x07) {
+    switch (iw >> 25 & 0x07) {
       case 0:
-        if ((((iw >> 4) & 0x1FFFFF) ^ 0x12FFF1) == 0) {
+        if (iw >> 4 & 0x1FFFFF ^ 0x12FFF1 == 0) {
           return _decodeBX(iw);
         }
-        final b74 = (iw >> 4) & 0xF;
+        final b74 = iw >> 4 & 0xF;
         if (b74 == 9) {
-          return (iw >> 24) & 0x01 != 0
+          return iw >> 24 & 0x01 != 0
               ? _decodeSWI(iw)
-              : (iw >> 23) ^ 0x01 != 0
+              : iw >> 23 ^ 0x01 != 0
                   ? _decodeMULL$MLAL(iw)
                   : _decodeMUL$MLA(iw);
         }
         if (b74 == 0xB || b74 == 0xD || b74 == 0xF) {
           return _decodeLRDH$STRH$LDRSB$LDRSH(iw);
         }
-        if (((iw >> 23) ^ 0x03) == 2 && ((iw >> 20) & 0x01) != 0) {
+        if (iw >> 23 & 0x03 == 2 && iw >> 20 & 0x01 == 0) {
           return (iw >> 21) & 0x01 != 0 ? _decodeMSR(iw) : _decodeMRS(iw);
         }
         return _decodeData(iw);
@@ -55,10 +56,11 @@ class ArmDecoder {
         if (iw >> 23 & 0x03 == 2 && iw >> 20 & 0x01 == 0) {
           return iw >> 21 & 0x01 != 0 ? _decodeMSR(iw) : _decodeMRS(iw);
         }
+        return _decodeData(iw);
       case 2:
-        return _decodeLRD$STR(iw);
+        return _decodeLDR$STR(iw);
       case 3:
-        return iw >> 4 & 0x01 ? _undefined(iw) : _decodeLDR$STR(iw);
+        return iw >> 4 & 0x01 != 0 ? _undefined(iw) : _decodeLDR$STR(iw);
       case 4:
         return _decodeLDM$STM(iw);
       case 5:
@@ -69,16 +71,15 @@ class ArmDecoder {
         if (iw >> 24 & 0x01 != 0) {
           return _decodeSWI(iw);
         }
-        return iw >> 4 & 0x01 ? _decodeMRC$MCR(iw) : _decodeCDP(iw);
+        return iw >> 4 & 0x01 != 0 ? _decodeMRC$MCR(iw) : _decodeCDP(iw);
       default:
         return _undefined(iw);
     }
-    throw new ArgumentError('Could not decode ${uint32.toBinaryPadded(iw)}');
   }
 
   Instruction _decodeBX(int iw) {
-    // final format = new BranchAndExchangeFormat(iw);
-    throw new UnimplementedError();
+    final format = new BranchAndExchangeFormat(iw);
+    return _compiler.createBX(cond: format.cond, rn: format.rn);
   }
 
   Instruction _decodeSWI(int iw) {
@@ -102,8 +103,13 @@ class ArmDecoder {
   }
 
   Instruction _decodeMSR(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    // TODO: Complete.
+    return _compiler.createMSR(
+      cond: new ArmCondition.fromOpcode(uint32.range(iw, 31, 28)),
+      spsr: null,
+      field: null,
+      rm: null,
+    );
   }
 
   Instruction _decodeMRS(int iw) {
@@ -253,14 +259,46 @@ class ArmDecoder {
     throw new ArgumentError('Could not decode opcode 0x${hexOp}');
   }
 
-  Instruction _decodeLRD$STR(int iw) {
+  Instruction _undefined(int iw) {
     // final format = ...
     throw new UnimplementedError();
   }
 
-  Instruction _undefined(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+  Instruction _decodeLDR$STR(int iw) {
+    final format = new SingleDataTransferFormat(iw);
+    if (format.l) {
+      if (format.b) {
+        return _compiler.createLDRByte(
+          cond: format.cond,
+          user: format.u,
+          rd: format.rd,
+          aMode: format.offset,
+        );
+      } else {
+        return _compiler.createLDRWord(
+          cond: format.cond,
+          user: format.u,
+          rd: format.rd,
+          aMode: format.offset,
+        );
+      }
+    } else {
+      if (format.b) {
+        return _compiler.createSTRByte(
+          cond: format.cond,
+          user: format.u,
+          rd: format.rd,
+          aMode: format.offset,
+        );
+      } else {
+        return _compiler.createSTRWord(
+          cond: format.cond,
+          user: format.u,
+          rd: format.rd,
+          aMode: format.offset,
+        );
+      }
+    }
   }
 
   Instruction _decodeLDM$STM(int iw) {
@@ -269,8 +307,10 @@ class ArmDecoder {
   }
 
   Instruction _decodeB$BL(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new BranchFormat(iw);
+    return format.l
+        ? _compiler.createBL(cond: format.cond, label: format.offset)
+        : _compiler.createB(cond: format.cond, label: format.offset);
   }
 
   Instruction _decodeLDC$STC(int iw) {
@@ -279,8 +319,30 @@ class ArmDecoder {
   }
 
   Instruction _decodeMRC$MCR(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
+    final format = new CoprocessorRegisterFormat(iw);
+    if (format.l) {
+      // Load to register from coprocessor.
+      return _compiler.createMRC(
+        cond: format.cond,
+        cpnum: format.cphash,
+        op1: format.cpopc,
+        rd: format.rd,
+        crn: format.crn,
+        crm: format.crm,
+        op2: format.cp,
+      );
+    } else {
+      // Store to coprocessor from register.
+      return _compiler.createMCR(
+        cond: format.cond,
+        cpnum: format.cphash,
+        op1: format.cpopc,
+        rd: format.rd,
+        crn: format.crn,
+        crm: format.crm,
+        op2: format.cp,
+      );
+    }
   }
 
   Instruction _decodeCDP(int iw) {

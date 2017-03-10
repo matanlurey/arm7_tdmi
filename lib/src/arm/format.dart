@@ -36,8 +36,6 @@ abstract class ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class DataProcessingFormat extends ArmInstructionFormat {
-  static const mask = 0x200;
-
   @literal
   const DataProcessingFormat(int instruction) : super._(instruction);
 
@@ -66,8 +64,6 @@ class DataProcessingFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class MultiplyFormat extends ArmInstructionFormat {
-  static const mask = 0x009;
-
   @literal
   const MultiplyFormat(int instruction) : super._(instruction);
 
@@ -96,8 +92,6 @@ class MultiplyFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class MultiplyLongFormat extends ArmInstructionFormat {
-  static const mask = 0x089;
-
   @literal
   const MultiplyLongFormat(int instruction) : super._(instruction);
 
@@ -128,8 +122,6 @@ class MultiplyLongFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class SingleDataSwapFormat extends ArmInstructionFormat {
-  static const mask = 0x109;
-
   @literal
   const SingleDataSwapFormat(int instruction) : super._(instruction);
 
@@ -174,8 +166,6 @@ class BranchAndExchangeFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class TransferRegisterFormat extends ArmInstructionFormat {
-  static const mask = 0x9;
-
   @literal
   const TransferRegisterFormat(int instruction) : super._(instruction);
 
@@ -211,8 +201,6 @@ class TransferRegisterFormat extends ArmInstructionFormat {
 @visibleForTesting
 class TransferImmediateFormat extends ArmInstructionFormat {
   @literal
-  static const mask = 0x49;
-
   const TransferImmediateFormat(int instruction) : super._(instruction);
 
   int get p => _bit(24);
@@ -247,8 +235,6 @@ class TransferImmediateFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class SingleDataTransferFormat extends ArmInstructionFormat {
-  static const mask = 0x400;
-
   @literal
   const SingleDataTransferFormat(int instruction) : super._(instruction);
 
@@ -256,13 +242,13 @@ class SingleDataTransferFormat extends ArmInstructionFormat {
 
   int get p => _bit(24);
 
-  int get u => _bit(23);
+  bool get u => _set(23);
 
-  int get b => _bit(22);
+  bool get b => _set(22);
 
   int get w => _bit(21);
 
-  int get l => _bit(20);
+  bool get l => _set(20);
 
   int get rn => _range(19, 16);
 
@@ -283,8 +269,6 @@ class SingleDataTransferFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class UndefinedFormat extends ArmInstructionFormat {
-  static const mask = 0x601;
-
   @literal
   const UndefinedFormat(int instruction) : super._(instruction);
 }
@@ -301,8 +285,6 @@ class UndefinedFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class BlockDataTransferFormat extends ArmInstructionFormat {
-  static const mask = 0x800;
-
   @literal
   const BlockDataTransferFormat(int instruction) : super._(instruction);
 
@@ -333,12 +315,10 @@ class BlockDataTransferFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class BranchFormat extends ArmInstructionFormat {
-  static const mask = 0xA00;
-
   @literal
   const BranchFormat(int instruction) : super._(instruction);
 
-  int get l => _bit(24);
+  bool get l => _set(24);
 
   int get offset => _range(23, 0);
 }
@@ -355,8 +335,6 @@ class BranchFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class CoprocessorTransferFormat extends ArmInstructionFormat {
-  static const mask = 0xC00;
-
   @literal
   const CoprocessorTransferFormat(int instruction) : super._(instruction);
 
@@ -391,8 +369,6 @@ class CoprocessorTransferFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class CoprocessorDataOperationFormat extends ArmInstructionFormat {
-  static const mask = 0xE00;
-
   @literal
   const CoprocessorDataOperationFormat(int instruction) : super._(instruction);
 
@@ -421,14 +397,12 @@ class CoprocessorDataOperationFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class CoprocessorRegisterFormat extends ArmInstructionFormat {
-  static const mask = 0xE00;
-
   @literal
   const CoprocessorRegisterFormat(int instruction) : super._(instruction);
 
   int get cpopc => _range(23, 21);
 
-  int get l => _bit(20);
+  bool get l => _set(20);
 
   int get crn => _range(19, 16);
 
@@ -453,8 +427,7 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
 class SoftwareInterruptFormat extends ArmInstructionFormat {
-  static const mask = 0xF00;
-
+  @literal
   const SoftwareInterruptFormat(int instruction) : super._(instruction);
 
   int get routine => _range(23, 0);

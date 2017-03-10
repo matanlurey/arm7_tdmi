@@ -106,8 +106,6 @@ class ArmCompiler {
   /// ```
   /// MSR{cond} CPSR{field}, Rm
   /// ```
-  ///
-  /// See also [c, aMode: nullreateMSRImmediate].
   Instruction createMSR({
     ArmCondition cond: ArmCondition.AL,
     bool spsr: false,

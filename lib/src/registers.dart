@@ -125,6 +125,27 @@ class Registers {
     return new Psr.view(_buffer, offset + cpsr.mode.size);
   }
 
+  /// Program counter (R15).
+  ///
+  /// When the processor is executing in ARM state ([Psr.isArmState]):
+  /// * All instructions are 32-bit in length.
+  /// * All instructions must be word aligned.
+  /// * Therefore the PC value is stored in bits [31:2] with bits [1:0] equal to
+  ///   zero (as instruction cannot be halfword or byte aligned).
+  int get pc => this[PC];
+  set pc(int pc) {
+    this[PC] = pc;
+  }
+
+  /// Link register (R14).
+  ///
+  /// Used as the subroutine link register and stores the return address when
+  /// Branch with Link operations are performed, calculated from the [pc].
+  int get lr => this[LR];
+  set lr(int lr) {
+    this[LR] = lr;
+  }
+
   /// Returns a [register] value.
   ///
   /// The memory location accessed is dependent on the operating mode.
@@ -372,24 +393,36 @@ class Psr {
   }
 
   /// Overflow (V) flag.
+  ///
+  /// Set when a result of an arithmetic instruction was greater than 31 bits;
+  /// indicates a possible corruption of the sign bit in signed numbers.
   bool get v => _isSet(V);
   set v(bool overflow) {
     _toggleBit(V, overflow);
   }
 
   /// Carry (C) flag.
+  ///
+  /// Set when a logical instruction's shift '1' was left in the carry flag or
+  /// the result of an arithmetic instruction was greater than 32 bits.
   bool get c => _isSet(C);
   set c(bool carry) {
     _toggleBit(C, carry);
   }
 
   /// Zero (Z) flag.
+  ///
+  /// Set when the result of a logical instruction was all "zeroes" or the
+  /// result of an arithmetic instruction was zero.
   bool get z => _isSet(Z);
   set z(bool zero) {
     _toggleBit(Z, zero);
   }
 
   /// Sign (N) flag.
+  ///
+  /// Set when bit 31 of the result of an arithmetic instruction has been set.
+  /// Indicates a negative number in signed operations.
   bool get n => _isSet(N);
   set n(bool sign) {
     _toggleBit(N, sign);
