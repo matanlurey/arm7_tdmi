@@ -75,4 +75,4 @@
 ///
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
-class Arm7Tdmi {}
+class Cpu {}

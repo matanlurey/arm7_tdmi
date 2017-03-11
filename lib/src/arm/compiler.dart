@@ -1,5 +1,6 @@
 library arm7_tdmi.src.arm.compiler;
 
+import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:meta/meta.dart';
 
 import 'condition.dart';
@@ -752,6 +753,8 @@ abstract class Instruction {
   /// Condition for the instruction to execute.
   ArmCondition get condition;
 
-  /// How many cycles the instruction takes to execute.
-  int get cycles;
+  /// Runs the instruction on the provided [cpu].
+  ///
+  /// Returns how many cycles the instruction takes to execute.
+  int execute(Cpu cpu);
 }
