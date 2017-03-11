@@ -1,7 +1,10 @@
 part of arm7_tdmi.src.arm.compiler;
 
 class _ArmInstruction$UMLAL extends Instruction {
-  const _ArmInstruction$UMLAL() : super._(name: 'UMLAL');
+  const _ArmInstruction$UMLAL({
+    @required ArmCondition condition,
+  })
+      : super._(condition: condition, name: 'UMLAL');
 
   @override
   noSuchMethod(_) => super.noSuchMethod(_);

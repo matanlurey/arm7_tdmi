@@ -1,7 +1,10 @@
 part of arm7_tdmi.src.arm.compiler;
 
 class _ArmInstruction$MRC extends Instruction {
-  const _ArmInstruction$MRC() : super._(name: 'MRC');
+  const _ArmInstruction$MRC({
+    @required ArmCondition condition,
+  })
+      : super._(condition: condition, name: 'MRC');
 
   @override
   noSuchMethod(_) => super.noSuchMethod(_);

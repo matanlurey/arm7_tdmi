@@ -1,7 +1,10 @@
 part of arm7_tdmi.src.arm.compiler;
 
 class _ArmInstruction$STR extends Instruction {
-  const _ArmInstruction$STR() : super._(name: 'STR');
+  const _ArmInstruction$STR({
+    @required ArmCondition condition,
+  })
+      : super._(condition: condition, name: 'STR');
 
   @override
   noSuchMethod(_) => super.noSuchMethod(_);

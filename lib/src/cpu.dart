@@ -84,6 +84,15 @@ class Cpu {
 
   Cpu._(this._registers);
 
+  /// GPRS.
+  Registers get gprs => _registers;
+
+  /// CPSR.
+  Psr get cpsr => _registers.cpsr;
+
+  /// SPSR.
+  Psr get spsr => _registers.spsr;
+
   /// Whether the CPU is currently executing as ARM.
   bool get isArm => _registers.cpsr.isArmState;
 

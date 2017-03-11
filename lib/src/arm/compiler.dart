@@ -62,7 +62,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$MOV();
+      new _ArmInstruction$MOV(condition: cond);
 
   /// Creates a _MVN_ (move not) instruction:
   ///
@@ -76,7 +76,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$MVN();
+      new _ArmInstruction$MVN(condition: cond);
 
   /// Creates a _MRS_ (move CPSR or SPSR to register) instruction.
   ///
@@ -94,7 +94,7 @@ class ArmCompiler {
     @required bool spsr,
     @required int rd,
   }) =>
-      const _ArmInstruction$MRS();
+      new _ArmInstruction$MRS(condition: cond);
 
   /// Creates a _MSR_ (move register) instruction:
   ///
@@ -113,7 +113,7 @@ class ArmCompiler {
     @required int field,
     @required int rm,
   }) =>
-      const _ArmInstruction$MSR();
+      new _ArmInstruction$MSR(condition: cond);
 
   /// Creates a _MSR_ (move immediate) instruction:
   ///
@@ -131,7 +131,7 @@ class ArmCompiler {
     bool spsr: false,
     @required int imm,
   }) =>
-      const _ArmInstruction$MSR();
+      new _ArmInstruction$MSR(condition: cond);
 
   // Arithmetic ================================================================
 
@@ -148,7 +148,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$ADD();
+      new _ArmInstruction$ADD(condition: cond);
 
   /// Creates a _ADC_ (add with carry) instruction.
   ///
@@ -163,7 +163,13 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$ADC();
+      new _ArmInstruction$ADC(
+        condition: cond,
+        rd: rd,
+        op1: rn,
+        op2: oprnd2,
+        s: s,
+      );
 
   /// Creates a _SUB_ (subtract) instruction.
   ///
@@ -178,7 +184,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$SUB();
+      new _ArmInstruction$SUB(condition: cond);
 
   /// Creates a _SBC_ (subtract with carry) instruction.
   ///
@@ -193,7 +199,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$SBC();
+      new _ArmInstruction$SBC(condition: cond);
 
   /// Creates a _RSB_ (subtract reverse subtract) instruction.
   ///
@@ -208,7 +214,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$RSB();
+      new _ArmInstruction$RSB(condition: cond);
 
   /// Creates a _RSC_ (subtract reverse subtract with carry) instruction.
   ///
@@ -223,7 +229,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$RSC();
+      new _ArmInstruction$RSC(condition: cond);
 
   /// Creates a _MUL_ (multiply) instruction.
   ///
@@ -238,7 +244,7 @@ class ArmCompiler {
     @required int rn,
     @required int rs,
   }) =>
-      const _ArmInstruction$MUL();
+      new _ArmInstruction$MUL(condition: cond);
 
   /// Creates a _MLA_ (multiply accumulate) instruction.
   ///
@@ -254,7 +260,7 @@ class ArmCompiler {
     @required int rs,
     @required int rn,
   }) =>
-      const _ArmInstruction$MLA();
+      new _ArmInstruction$MLA(condition: cond);
 
   /// Creates a _UMULL_ (multiply unsigned long) instruction.
   ///
@@ -270,7 +276,7 @@ class ArmCompiler {
     @required int rm,
     @required int rs,
   }) =>
-      const _ArmInstruction$UMULL();
+      new _ArmInstruction$UMULL(condition: cond);
 
   /// Creates a _UMLAL_ (multiply unsigned accumulate long) instruction.
   ///
@@ -286,7 +292,7 @@ class ArmCompiler {
     @required int rm,
     @required int rs,
   }) =>
-      const _ArmInstruction$UMLAL();
+      new _ArmInstruction$UMLAL(condition: cond);
 
   /// Creates a _SMULL_ (multiply signed long) instruction.
   ///
@@ -302,7 +308,7 @@ class ArmCompiler {
     @required int rm,
     @required int rs,
   }) =>
-      const _ArmInstruction$SMULL();
+      new _ArmInstruction$SMULL(condition: cond);
 
   /// Creates a _SMLAL_ (multiply signed accumulate long) instruction.
   ///
@@ -318,7 +324,7 @@ class ArmCompiler {
     @required int rm,
     @required int rs,
   }) =>
-      const _ArmInstruction$SMLAL();
+      new _ArmInstruction$SMLAL(condition: cond);
 
   /// Creates a _CMP_ (compare) instruction.
   ///
@@ -331,7 +337,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$CMP();
+      new _ArmInstruction$CMP(condition: cond);
 
   /// Creates a _CMN_ (compare negative) instruction.
   ///
@@ -344,7 +350,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$CMN();
+      new _ArmInstruction$CMN(condition: cond);
 
   // Logical ===================================================================
 
@@ -359,7 +365,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$TST();
+      new _ArmInstruction$TST(condition: cond);
 
   /// Creates a _TEQ_ (test equivalence) instruction.
   ///
@@ -372,7 +378,7 @@ class ArmCompiler {
     @required int rd,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$TEQ();
+      new _ArmInstruction$TEQ(condition: cond);
 
   /// Creates a _AND_ instruction.
   ///
@@ -387,7 +393,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$AND();
+      new _ArmInstruction$AND(condition: cond);
 
   /// Creates a _EOR_ instruction.
   ///
@@ -402,7 +408,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$EOR();
+      new _ArmInstruction$EOR(condition: cond);
 
   /// Creates a _ORR_ instruction.
   ///
@@ -417,7 +423,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$ORR();
+      new _ArmInstruction$ORR(condition: cond);
 
   /// Creates a _BIC_ instruction.
   ///
@@ -432,7 +438,7 @@ class ArmCompiler {
     @required int rn,
     @required int oprnd2,
   }) =>
-      const _ArmInstruction$BIC();
+      new _ArmInstruction$BIC(condition: cond);
 
   // Branch ====================================================================
 
@@ -446,7 +452,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int label,
   }) =>
-      const _ArmInstruction$B();
+      new _ArmInstruction$B(condition: cond);
 
   /// Creates a _BL_ (branch with link) instruction.
   ///
@@ -458,7 +464,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int label,
   }) =>
-      const _ArmInstruction$BL();
+      new _ArmInstruction$BL(condition: cond);
 
   /// Creates a _BX_ (branch and exchange) instruction.
   ///
@@ -470,7 +476,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int rn,
   }) =>
-      const _ArmInstruction$BX();
+      new _ArmInstruction$BX(condition: cond);
 
   // Load ======================================================================
 
@@ -491,7 +497,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$LDR();
+      new _ArmInstruction$LDR(condition: cond);
 
   /// Creates a _LDR_ (byte) instruction.
   ///
@@ -516,7 +522,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$LDR();
+      new _ArmInstruction$LDR(condition: cond);
 
   /// Creates a _LDR_ (half-word) instruction.
   ///
@@ -535,7 +541,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$LDR();
+      new _ArmInstruction$LDR(condition: cond);
 
   /// Create a _LDR_ (load multiple) instruction.
   ///
@@ -549,7 +555,7 @@ class ArmCompiler {
     @required int rn,
     @required int rd,
   }) =>
-      const _ArmInstruction$LDM();
+      new _ArmInstruction$LDM(condition: cond);
 
   // Store =====================================================================
 
@@ -570,7 +576,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$STR();
+      new _ArmInstruction$STR(condition: cond);
 
   /// Creates a _STR_ (store byte) instruction.
   ///
@@ -589,7 +595,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$STR();
+      new _ArmInstruction$STR(condition: cond);
 
   /// Creates a _STR_ (store half-word) instruction.
   ///
@@ -602,7 +608,7 @@ class ArmCompiler {
     @required int rd,
     @required int aMode,
   }) =>
-      const _ArmInstruction$STR();
+      new _ArmInstruction$STR(condition: cond);
 
   /// Create a _STM_ (store multiple) instruction.
   ///
@@ -616,7 +622,7 @@ class ArmCompiler {
     @required int rn,
     @required int rd,
   }) =>
-      const _ArmInstruction$STM();
+      new _ArmInstruction$STM(condition: cond);
 
   // Swap ======================================================================
 
@@ -632,7 +638,7 @@ class ArmCompiler {
     @required int rm,
     @required int rn,
   }) =>
-      const _ArmInstruction$SWP();
+      new _ArmInstruction$SWP(condition: cond);
 
   /// Creates a _SWP_ (swap word) instruction.
   ///
@@ -646,7 +652,7 @@ class ArmCompiler {
     @required int rm,
     @required int rn,
   }) =>
-      const _ArmInstruction$SWP();
+      new _ArmInstruction$SWP(condition: cond);
 
   // Coprocessors ==============================================================
 
@@ -665,7 +671,7 @@ class ArmCompiler {
     @required int crm,
     @required int op2,
   }) =>
-      const _ArmInstruction$CDP();
+      new _ArmInstruction$CDP(condition: cond);
 
   /// Creates a _MRC_ (move ARM register from coprocessor) instruction.
   ///
@@ -682,7 +688,7 @@ class ArmCompiler {
     @required int crm,
     @required int op2,
   }) =>
-      const _ArmInstruction$MRC();
+      new _ArmInstruction$MRC(condition: cond);
 
   /// Creates a _MCR_ (move to coprocessor from ARM register) instruction.
   ///
@@ -699,7 +705,7 @@ class ArmCompiler {
     @required int crm,
     @required int op2,
   }) =>
-      const _ArmInstruction$MCR();
+      new _ArmInstruction$MCR(condition: cond);
 
   /// Creates a _LDC_ (load) instruction.
   ///
@@ -713,7 +719,7 @@ class ArmCompiler {
     @required int crd,
     @required int offset,
   }) =>
-      const _ArmInstruction$LDC();
+      new _ArmInstruction$LDC(condition: cond);
 
   /// Creates a _STC_ (store) instruction.
   ///
@@ -727,7 +733,7 @@ class ArmCompiler {
     @required int crd,
     @required int offset,
   }) =>
-      const _ArmInstruction$STC();
+      new _ArmInstruction$STC(condition: cond);
 
   // Software Interrupt ========================================================
 
@@ -741,17 +747,20 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int routine,
   }) =>
-      const _ArmInstruction$SWI();
+      new _ArmInstruction$SWI(condition: cond);
 }
 
 abstract class Instruction {
+  /// Condition for the instruction to execute.
+  final ArmCondition condition;
+
   /// Syntax name of the instruction.
   final String name;
 
-  const Instruction._({@required this.name});
-
-  /// Condition for the instruction to execute.
-  ArmCondition get condition;
+  const Instruction._({
+    @required this.condition,
+    @required this.name,
+  });
 
   /// Runs the instruction on the provided [cpu].
   ///

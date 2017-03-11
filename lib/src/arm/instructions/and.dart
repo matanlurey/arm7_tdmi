@@ -1,7 +1,10 @@
 part of arm7_tdmi.src.arm.compiler;
 
 class _ArmInstruction$AND extends Instruction {
-  const _ArmInstruction$AND() : super._(name: 'AND');
+  const _ArmInstruction$AND({
+    @required ArmCondition condition,
+  })
+      : super._(condition: condition, name: 'AND');
 
   @override
   noSuchMethod(_) => super.noSuchMethod(_);
