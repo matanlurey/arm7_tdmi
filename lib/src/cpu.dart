@@ -1,3 +1,5 @@
+import 'package:arm7_tdmi/arm7_tdmi.dart';
+
 /// A 32-bit CPU Emulator for the ARM7/TDMI Processor.
 ///
 /// ## Fast execution
@@ -60,7 +62,7 @@
 /// change states as often as desired - with almost no overload).
 ///
 /// Also, as both `ARM` and `THUMB` are using the same register set, it is
-/// possible to pass data between `ARM` and `THUMB` mode very eaisly.
+/// possible to pass data between `ARM` and `THUMB` mode very easily.
 ///
 /// The best memory and execution performance can be gained by combining both
 /// states: `THUMB` for normal program code, and `ARM` code for timing critical
@@ -75,4 +77,28 @@
 ///
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
-class Cpu {}
+class Cpu {
+  final Registers _registers;
+
+  factory Cpu() => new Cpu._(new Registers());
+
+  Cpu._(this._registers);
+
+  /// Whether the CPU is currently executing as ARM.
+  bool get isArm => _registers.cpsr.isArmState;
+
+  /// Whether the CPU is currently executing as THUMB.
+  bool get isThumb => _registers.cpsr.isThumbState;
+
+  /// Whether FIQ is disabled.
+  bool get isFiqDisabled => _registers.cpsr.f;
+
+  /// Whether IRQ is disabled.
+  bool get isIrqDisabled => _registers.cpsr.i;
+
+  /// Operating mode.
+  Mode get mode => _registers.cpsr.mode;
+
+  /// Program counter for the CPU.
+  int get programCounter => _registers.pc;
+}

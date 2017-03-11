@@ -71,10 +71,10 @@ class Registers {
   Psr _cpsr;
 
   /// Create a new empty register set with a pre-specified operating [mode].
-  factory Registers({Mode mode: Mode.usr}) {
+  factory Registers({Mode mode: Mode.svc}) {
     final buffer = new Uint32List(_totalSize * Uint32List.BYTES_PER_ELEMENT);
     final registers = new Registers.view(buffer);
-    registers.cpsr.mode = mode;
+    registers.reset();
     return registers;
   }
 
@@ -189,6 +189,11 @@ class Registers {
     _buffer[offsets[cpsr.mode] + register] = value;
   }
 
+  /// Resets to the default value.
+  void reset() {
+    _cpsr.reset();
+  }
+
   /// Returns a copy of the data backing the registers.
   Uint32List toFixedList() => new Uint32List.fromList(_buffer);
 }
@@ -220,7 +225,7 @@ class Mode {
   /// Used for general purpose interrupt handling.
   static const irq = const Mode._(0x12, 'irq', 3);
 
-  /// A protected mode for the operating system.
+  /// A protected (supervisor) mode for the operating system.
   static const svc = const Mode._(0x13, 'svc', 3);
 
   /// Entered after a data or instruction prefetch abort.
@@ -322,6 +327,12 @@ class Psr {
   static const thumbState = 5;
 
   @visibleForTesting
+  static const fiqDisable = 6;
+
+  @visibleForTesting
+  static const irqDisable = 7;
+
+  @visibleForTesting
   static const V = 28;
 
   @visibleForTesting
@@ -339,10 +350,12 @@ class Psr {
   // Writes to memory.
   final VoidFunc1<int> _write;
 
-  /// Creates a new PSR.
+  /// Creates a new PSR representing a default/reset state.
   factory Psr({
-    Mode mode: Mode.usr,
+    Mode mode: Mode.svc,
     bool arm: true,
+    bool i: true,
+    bool f: true,
     bool v: false,
     bool c: false,
     bool z: false,
@@ -350,6 +363,8 @@ class Psr {
   }) =>
       new Psr.bits(0 | mode.bits)
         ..isArmState = arm
+        ..i = i
+        ..f = f
         ..v = v
         ..c = c
         ..z = z
@@ -390,6 +405,18 @@ class Psr {
   set mode(Mode mode) {
     _write(_read() | mode.bits);
     assert(mode != null);
+  }
+
+  /// IRQ disabled.
+  bool get i => _isSet(irqDisable);
+  set i(bool i) {
+    _toggleBit(irqDisable, i);
+  }
+
+  /// FIQ disabled.
+  bool get f => _isSet(fiqDisable);
+  set f(bool f) {
+    _toggleBit(fiqDisable, f);
   }
 
   /// Overflow (V) flag.
@@ -454,11 +481,26 @@ class Psr {
   // Sets a bit by index.
   void _setBit(int index) {
     _write(uint32.set(_read(), index));
+    assert(_isSet(index), 'Did not write to B$index');
   }
 
   // Un-sets a bit by index.
   void _unsetBit(int index) {
     _write(uint32.clear(_read(), index));
+    assert(!_isSet(index), 'Did not write to B$index');
+  }
+
+  /// Reset the CPSR to the default values.
+  void reset() {
+    this
+      ..mode = Mode.svc
+      ..isArmState = true
+      ..i = true
+      ..f = true
+      ..v = false
+      ..c = false
+      ..z = false
+      ..n = false;
   }
 
   /// Returns the bits representing this PSR.
@@ -470,6 +512,8 @@ class Psr {
       {
         'mode': mode.identifier,
         'state': isArmState ? 'ARM' : 'THUMB',
+        'i': i ? 'set' : 'clear',
+        'f': f ? 'set' : 'clear',
         'v': v ? 'set' : 'clear',
         'c': c ? 'set' : 'clear',
         'z': z ? 'set' : 'clear',
