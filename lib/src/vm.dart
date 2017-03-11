@@ -16,7 +16,7 @@ class VM {
     Iterable<Device> devices: const [],
     @required this.memory,
   }) {
-    _devices.addAll(devices);
+    devices.forEach(registerDevice);
   }
 
   /// Registers the specified [device] with the virtual machine.

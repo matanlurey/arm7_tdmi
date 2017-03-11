@@ -327,10 +327,10 @@ class Psr {
   static const thumbState = 5;
 
   @visibleForTesting
-  static const fiqDisable = 6;
+  static const F = 6;
 
   @visibleForTesting
-  static const irqDisable = 7;
+  static const I = 7;
 
   @visibleForTesting
   static const V = 28;
@@ -408,15 +408,15 @@ class Psr {
   }
 
   /// IRQ disabled.
-  bool get i => _isSet(irqDisable);
+  bool get i => _isSet(I);
   set i(bool i) {
-    _toggleBit(irqDisable, i);
+    _toggleBit(I, i);
   }
 
   /// FIQ disabled.
-  bool get f => _isSet(fiqDisable);
+  bool get f => _isSet(F);
   set f(bool f) {
-    _toggleBit(fiqDisable, f);
+    _toggleBit(F, f);
   }
 
   /// Overflow (V) flag.

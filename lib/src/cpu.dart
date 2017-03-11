@@ -101,4 +101,9 @@ class Cpu {
 
   /// Program counter for the CPU.
   int get programCounter => _registers.pc;
+
+  /// Raise a CPU-level [exception].
+  void raise(ArmException exception) {
+    throw new UnimplementedError();
+  }
 }
