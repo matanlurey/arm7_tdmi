@@ -491,10 +491,7 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int label,
   }) =>
-      new _ArmInstruction$B(
-        condition: cond,
-        immediate: label,
-      );
+      new _ArmInstruction$B(condition: cond);
 
   /// Creates a _BL_ (branch with link) instruction.
   ///
@@ -520,12 +517,9 @@ class ArmCompiler {
   /// ```
   Instruction createBX({
     ArmCondition cond: ArmCondition.AL,
-    @required int rn,
+    @required int operand,
   }) =>
-      new _ArmInstruction$BX(
-        condition: cond,
-        offset: rn,
-      );
+      new _ArmInstruction$BX(condition: cond, operand: operand);
 
   // Load ======================================================================
 
