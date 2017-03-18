@@ -1,4 +1,6 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:func/func.dart';
+import 'package:meta/meta.dart';
 
 /// A 32-bit CPU Emulator for the ARM7/TDMI Processor.
 ///
@@ -78,11 +80,39 @@ import 'package:arm7_tdmi/arm7_tdmi.dart';
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
 class Cpu {
+  final ArmDecoder _decoder;
   final Registers _registers;
+  final Func1<int, int> _read16;
+  final Func1<int, int> _read32;
 
-  factory Cpu() => new Cpu._(new Registers());
+  factory Cpu({
+    ArmDecoder decoder: const ArmDecoder(),
+    @required int read16(int address),
+    @required int read32(int address),
+  }) =>
+      new Cpu._(
+        decoder,
+        new Registers(),
+        read16,
+        read32,
+      );
 
-  Cpu._(this._registers);
+  @visibleForTesting
+  factory Cpu.noExecution({
+    ArmDecoder decoder: const ArmDecoder(),
+  }) =>
+      new Cpu(
+        decoder: decoder,
+        read16: (_) => throw new UnsupportedError('No execution supported'),
+        read32: (_) => throw new UnsupportedError('No execution supported'),
+      );
+
+  Cpu._(
+    this._decoder,
+    this._registers,
+    this._read16,
+    this._read32,
+  );
 
   /// GPRS.
   Registers get gprs => _registers;
@@ -109,10 +139,67 @@ class Cpu {
   Mode get mode => _registers.cpsr.mode;
 
   /// Program counter for the CPU.
-  int get programCounter => _registers.pc;
+  int get pc => _registers.pc;
 
   /// Raise a CPU-level [exception].
   void raise(ArmException exception) {
     throw new UnimplementedError();
   }
+
+  /// Single-steps the CPU, that is, fetches and executes a single instruction.
+  ///
+  /// Returns the number of clock cycles needed to execute the instruction.
+  int step() => -1 * (run(1) - 1);
+
+  /// Runs the CPU for specified clock [cycles].
+  ///
+  /// Returns the difference between the number of requested clock cycles and
+  /// the actual number of clock cycles performed. This may be `0` or a negative
+  /// value.
+  int run(int cycles) {
+    while (cycles > 0) {
+      // Fetch instruction word (iw).
+      // FIXME: Handle prefetch aborts.
+      final i = _decoder.decode(read32(gprs.pc));
+      if (i.condition.pass(cpsr)) {
+        // The PC value used in an executing instruction is always two
+        // instructions ahead of the actual instruction address because of
+        // pipe-lining.
+        gprs.pc += 8;
+
+        // Dispatch instruction.
+        final before = gprs.pc;
+        final executed = i.execute(this);
+        cycles -= executed;
+
+        // Move on to next instruction, unless executed instruction was a branch
+        // which means a pipeline flush, or the instruction raised an exception
+        // and altered the PC.
+        if (gprs.pc == before &&
+            // TODO: Make this first-class instead.
+            i.name != 'BX' &&
+            i.name != 'B' &&
+            i.name != 'BL') {
+          gprs.pc -= 4;
+        }
+      } else {
+        // Skip over the instruction.
+        gprs.pc += 4;
+        cycles--;
+      }
+      // Check for FIQ and IRQ exceptions.
+      if (!isFiqDisabled && !cpsr.f) {
+        raise(ArmException.fiq);
+      } else if (!isIrqDisabled && !cpsr.i) {
+        raise(ArmException.irq);
+      }
+    }
+    return cycles;
+  }
+
+  /// Read a half-word from the program at [pc].
+  int read16(int pc) => _read16(pc);
+
+  /// Read a word from the program at [pc].
+  int read32(int pc) => _read32(pc);
 }

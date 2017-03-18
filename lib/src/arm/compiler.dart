@@ -491,7 +491,10 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int label,
   }) =>
-      new _ArmInstruction$B(condition: cond);
+      new _ArmInstruction$B(
+        condition: cond,
+        immediate: label,
+      );
 
   /// Creates a _BL_ (branch with link) instruction.
   ///

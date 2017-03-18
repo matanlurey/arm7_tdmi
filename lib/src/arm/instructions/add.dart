@@ -25,16 +25,15 @@ class _ArmInstruction$ADD extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    if (condition.pass(cpu.cpsr)) {
-      final r = op1.toUnsigned(32) + op2.toUnsigned(32);
-      cpu.gprs[rd] = r.toUnsigned(32);
-      if (s) {
-        cpu.cpsr
-          ..c = r > 0xFFFFFFFF
-          ..v = (~(op1 ^ op2) & (op1 ^ r)) > 0x7FFFFFFF
-          ..n = r > 0x7FFFFFFF
-          ..z = r == 0;
-      }
+    // FIXME: Figure out how to interpret op2.
+    final r = op1.toUnsigned(32) + op2.toUnsigned(32);
+    cpu.gprs[rd] = r.toUnsigned(32);
+    if (s) {
+      cpu.cpsr
+        ..c = uint32.hasCarryBit(r)
+        ..v = uint32.doesAddOverflow(op1, op2, r)
+        ..n = uint32.isNegative(r)
+        ..z = isZero(r);
     }
     return 1;
   }

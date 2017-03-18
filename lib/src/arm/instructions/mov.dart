@@ -21,13 +21,11 @@ class _ArmInstruction$MOV extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    if (condition.pass(cpu.cpsr)) {
-      final r = cpu.gprs[rd] = op2.toUnsigned(32);
-      if (s) {
-        cpu.cpsr
-          ..n = r > 0x7FFFFFFF
-          ..z = r == 0;
-      }
+    final r = cpu.gprs[rd] = op2.toUnsigned(32);
+    if (s) {
+      cpu.cpsr
+        ..n = r > 0x7FFFFFFF
+        ..z = r == 0;
     }
     return 1;
   }

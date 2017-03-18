@@ -8,7 +8,7 @@ class _ArmInstruction$BL extends Instruction {
     @required ArmCondition condition,
     @required this.immediate,
   })
-      : super._(condition: condition, name: 'B');
+      : super._(condition: condition, name: 'BL');
 
   @override
   int execute(Cpu cpu) {
