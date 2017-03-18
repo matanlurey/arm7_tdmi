@@ -439,7 +439,6 @@ class ArmDecoder {
             cond: format.cond,
             label: format.immediate,
             immediate: format.immediate,
-            updateLinkRegister: format.updateLinkRegister,
           )
         : _compiler.createB(cond: format.cond, label: format.immediate);
   }

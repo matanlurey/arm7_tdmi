@@ -346,11 +346,10 @@ class BranchFormat extends ArmInstructionFormat {
   @literal
   const BranchFormat(int instruction) : super._(instruction);
 
+  /// Whether to store the instruction of the next address in the link register.
   bool get l => _set(24);
 
   int get immediate => _range(23, 0);
-
-  bool get updateLinkRegister => _set(24);
 }
 
 /// Instruction format for Coprocessor Data Transfer.
