@@ -433,9 +433,15 @@ class ArmDecoder {
 
   Instruction _decodeB$BL(int iw) {
     final format = new BranchFormat(iw);
+
     return format.l
-        ? _compiler.createBL(cond: format.cond, label: format.offset)
-        : _compiler.createB(cond: format.cond, label: format.offset);
+        ? _compiler.createBL(
+            cond: format.cond,
+            label: format.immediate,
+            immediate: format.immediate,
+            updateLinkRegister: format.updateLinkRegister,
+          )
+        : _compiler.createB(cond: format.cond, label: format.immediate);
   }
 
   Instruction _decodeLDC$STC(int iw) {

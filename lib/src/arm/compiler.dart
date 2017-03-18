@@ -463,8 +463,14 @@ class ArmCompiler {
   Instruction createBL({
     ArmCondition cond: ArmCondition.AL,
     @required int label,
+    @required bool updateLinkRegister,
+    @required int immediate,
   }) =>
-      new _ArmInstruction$BL(condition: cond);
+      new _ArmInstruction$BL(
+        condition: cond,
+        updateLinkRegister: updateLinkRegister,
+        immediate: immediate,
+      );
 
   /// Creates a _BX_ (branch and exchange) instruction.
   ///

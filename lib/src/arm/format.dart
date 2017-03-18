@@ -348,7 +348,9 @@ class BranchFormat extends ArmInstructionFormat {
 
   bool get l => _set(24);
 
-  int get offset => _range(23, 0);
+  int get immediate => _range(23, 0);
+
+  bool get updateLinkRegister => _set(24);
 }
 
 /// Instruction format for Coprocessor Data Transfer.
