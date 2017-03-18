@@ -114,6 +114,28 @@ class Cpu {
     this._read32,
   );
 
+  /// An auxiliary literal for data-processing in addressing mode 1.  The
+  /// shifter operand takes one of three formats:
+  /// 1. Immediate operand - formed by rotating an 8-bit constant in a 32-bit
+  ///    word by an even number of bits (in the range 0-30).  Therefore, each
+  ///    instruction contains an 8-bit constant and a 4-bit rotate to be applied
+  ///    to that constant.
+  /// 2. A register operand value is simply the value of a register. The value
+  ///    of the register is used directly as the operand to the data-processing
+  ///    instruction.
+  /// 3. A shifted register operand value is the value of a register, shifted
+  ///    (or rotated) before it is used as the data-processing operand. There
+  ///    are five types of shift:
+  ///    - ASR Arithmetic shift right.
+  ///    - LSL Logical shift left.
+  ///    - LSR Logical shift right.
+  ///    - ROR Rotate right.
+  ///    - RRX Rotate right with extend.
+  int shifterOperand;
+
+  /// Jesus fuck so much docs.
+  bool shifterCarryOut;
+
   /// GPRS.
   Registers get gprs => _registers;
 
