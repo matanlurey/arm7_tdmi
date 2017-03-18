@@ -1,6 +1,7 @@
 library arm7_tdmi.src.arm.compiler;
 
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
 import 'condition.dart';
@@ -512,9 +513,9 @@ class ArmCompiler {
   /// ```
   Instruction createBX({
     ArmCondition cond: ArmCondition.AL,
-    @required int rn,
+    @required int operand,
   }) =>
-      new _ArmInstruction$BX(condition: cond);
+      new _ArmInstruction$BX(condition: cond, operand: operand);
 
   // Load ======================================================================
 
