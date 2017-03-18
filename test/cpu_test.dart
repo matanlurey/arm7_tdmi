@@ -39,12 +39,10 @@ void main() {
     });
 
     test('reset instruction should initially be fetched', () {
-      cpu = new Cpu.noExecution(
-        read32: expectAsync1((address) {
-          expect(address, 0x0);
-          return 0;
-        }
-      ));
+      cpu = new Cpu.noExecution(read32: expectAsync1((address) {
+        expect(address, 0x0);
+        return 0;
+      }));
       cpu.step();
     });
   });

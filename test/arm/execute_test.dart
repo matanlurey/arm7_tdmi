@@ -57,9 +57,9 @@ void main() {
   test('Data abort should take the trap when an address is unavailable', () {
     const abortInst = 0xE5901000;
     final rom = createRom([
-      0xe51f0000,   // ldr r0, [pc, #-0]
-      abortInst,    // ldr r1, [r0]
-      0x12345678,   // embedded constant for ldr r0 instruction
+      0xe51f0000, // ldr r0, [pc, #-0]
+      abortInst, // ldr r1, [r0]
+      0x12345678, // embedded constant for ldr r0 instruction
     ]);
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
     cpu.step(); // Reset branch.
