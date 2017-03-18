@@ -1,6 +1,6 @@
 part of arm7_tdmi.src.arm.compiler;
 
-/// Implements the 'Add with Carry instruction'.
+/// Implements the 'Add with Carry Instruction'.
 class _ArmInstruction$ADC extends Instruction {
   /// First operand of the instruction.
   final int op1;

@@ -60,9 +60,14 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int oprnd2,
+    @required int op2,
   }) =>
-      new _ArmInstruction$MOV(condition: cond);
+      new _ArmInstruction$MOV(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op2: op2,
+      );
 
   /// Creates a _MVN_ (move not) instruction:
   ///
@@ -74,9 +79,14 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int oprnd2,
+    @required int op2,
   }) =>
-      new _ArmInstruction$MVN(condition: cond);
+      new _ArmInstruction$MVN(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op2: op2,
+      );
 
   /// Creates a _MRS_ (move CPSR or SPSR to register) instruction.
   ///
@@ -94,7 +104,11 @@ class ArmCompiler {
     @required bool spsr,
     @required int rd,
   }) =>
-      new _ArmInstruction$MRS(condition: cond);
+      new _ArmInstruction$MRS(
+        condition: cond,
+        spsr: spsr,
+        rd: rd,
+      );
 
   /// Creates a _MSR_ (move register) instruction:
   ///
@@ -145,10 +159,16 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int rn,
-    @required int oprnd2,
+    @required int op1,
+    @required int op2,
   }) =>
-      new _ArmInstruction$ADD(condition: cond);
+      new _ArmInstruction$ADD(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op1: op1,
+        op2: op2,
+      );
 
   /// Creates a _ADC_ (add with carry) instruction.
   ///
@@ -181,10 +201,16 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int rn,
-    @required int oprnd2,
+    @required int op1,
+    @required int op2,
   }) =>
-      new _ArmInstruction$SUB(condition: cond);
+      new _ArmInstruction$SUB(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op1: op1,
+        op2: op2,
+      );
 
   /// Creates a _SBC_ (subtract with carry) instruction.
   ///
@@ -196,10 +222,16 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int rn,
-    @required int oprnd2,
+    @required int op1,
+    @required int op2,
   }) =>
-      new _ArmInstruction$SBC(condition: cond);
+      new _ArmInstruction$SBC(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op1: op1,
+        op2: op2,
+      );
 
   /// Creates a _RSB_ (subtract reverse subtract) instruction.
   ///
@@ -211,10 +243,16 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int rn,
-    @required int oprnd2,
+    @required int op1,
+    @required int op2,
   }) =>
-      new _ArmInstruction$RSB(condition: cond);
+      new _ArmInstruction$RSB(
+        condition: cond,
+        s: s,
+        rd: rd,
+        op1: op1,
+        op2: op2,
+      );
 
   /// Creates a _RSC_ (subtract reverse subtract with carry) instruction.
   ///

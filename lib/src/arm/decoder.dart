@@ -249,8 +249,9 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          rn: format.rn,
-          oprnd2: format.operand2,
+          // ???
+          op1: format.rn,
+          op2: format.operand2,
         );
       // RSB
       case 0x3:
@@ -258,8 +259,8 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          rn: format.rn,
-          oprnd2: format.operand2,
+          op1: format.rn,
+          op2: format.operand2,
         );
       // ADD
       case 0x4:
@@ -267,8 +268,9 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          rn: format.rn,
-          oprnd2: format.operand2,
+          // ???
+          op1: format.rn,
+          op2: format.operand2,
         );
       // ADC
       case 0x5:
@@ -285,8 +287,8 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          rn: format.rn,
-          oprnd2: format.operand2,
+          op1: format.rn,
+          op2: format.operand2,
         );
       // RSC
       case 0x7:
@@ -340,7 +342,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          oprnd2: format.operand2,
+          op2: format.operand2,
         );
       // BIC
       case 0xE:
@@ -357,7 +359,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          oprnd2: format.operand2,
+          op2: format.operand2,
         );
     }
     final hexOp = format.opcode.toRadixString(16).toUpperCase();
