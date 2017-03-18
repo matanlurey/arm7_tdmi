@@ -17,9 +17,7 @@ class _ArmInstruction$MRS extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    if (condition.pass(cpu.cpsr)) {
-      cpu.gprs[rd] = spsr ? cpu.spsr.value : cpu.cpsr.value;
-    }
+    cpu.gprs[rd] = spsr ? cpu.spsr.value : cpu.cpsr.value;
     return 1;
   }
 }

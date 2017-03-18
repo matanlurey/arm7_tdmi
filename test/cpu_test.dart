@@ -6,7 +6,7 @@ void main() {
     Cpu cpu;
 
     setUp(() {
-      cpu = new Cpu();
+      cpu = new Cpu.noExecution();
     });
 
     group('reset values', () {
@@ -18,7 +18,7 @@ void main() {
       // that the ARM core has started in ARM state, Supervisor mode with both
       // FIQ and IRQ mask bits set. The condition code flags will be undefined.
       test('PC/R15 should be 0x00000000', () {
-        expect(cpu.programCounter, 0x00000000);
+        expect(cpu.pc, 0x00000000);
       });
 
       test('ARM core should be in the ARM state', () {

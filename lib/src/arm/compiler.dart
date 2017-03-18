@@ -1,6 +1,7 @@
 library arm7_tdmi.src.arm.compiler;
 
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
 import 'condition.dart';
@@ -490,7 +491,10 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int label,
   }) =>
-      new _ArmInstruction$B(condition: cond);
+      new _ArmInstruction$B(
+        condition: cond,
+        immediate: label,
+      );
 
   /// Creates a _BL_ (branch with link) instruction.
   ///
@@ -514,7 +518,10 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     @required int rn,
   }) =>
-      new _ArmInstruction$BX(condition: cond);
+      new _ArmInstruction$BX(
+        condition: cond,
+        offset: rn,
+      );
 
   // Load ======================================================================
 
