@@ -67,7 +67,7 @@ class ArmDecoder {
 
   Instruction _decodeBX(int iw) {
     final format = new BranchAndExchangeFormat(iw);
-    return _compiler.createBX(cond: format.cond, rn: format.rn);
+    return _compiler.createBX(cond: format.cond, operand: format.rn);
   }
 
   Instruction _decodeSWI(int iw) {
