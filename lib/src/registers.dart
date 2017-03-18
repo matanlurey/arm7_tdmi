@@ -503,8 +503,9 @@ class Psr {
       ..n = false;
   }
 
-  /// Returns the bits representing this PSR.
+  /// Bits representing this PSR.
   int get value => _read();
+  set value(int value) => _write(value);
 
   @override
   String toString() =>

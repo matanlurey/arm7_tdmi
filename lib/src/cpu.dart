@@ -80,6 +80,10 @@ import 'package:meta/meta.dart';
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
 class Cpu {
+  static int _unsupportedRead(_) {
+    throw new UnsupportedError('No execution supported');
+  }
+
   final ArmDecoder _decoder;
   final Registers _registers;
   final Func1<int, int> _read16;
@@ -100,11 +104,13 @@ class Cpu {
   @visibleForTesting
   factory Cpu.noExecution({
     ArmDecoder decoder: const ArmDecoder(),
+    int read16(int address): _unsupportedRead,
+    int read32(int address): _unsupportedRead,
   }) =>
       new Cpu(
         decoder: decoder,
-        read16: (_) => throw new UnsupportedError('No execution supported'),
-        read32: (_) => throw new UnsupportedError('No execution supported'),
+        read16: read16,
+        read32: read32,
       );
 
   Cpu._(
@@ -143,7 +149,38 @@ class Cpu {
 
   /// Raise a CPU-level [exception].
   void raise(ArmException exception) {
-    throw new UnimplementedError();
+    final newCpsr = new Psr.bits(cpsr.value)
+      ..mode = exception.mode
+      // Disable interrupts.
+      ..i = true;
+
+    // FIQ is only disabled on power-up and for FIQ interrupts.
+    //
+    // Otherwise it remains unchanged.
+    if (exception == ArmException.reset || exception == ArmException.fiq) {
+      newCpsr.f = true;
+    }
+
+    // Exceptions are only executed in ARM state.
+    newCpsr.isArmState = true;
+
+    // Switch CPU to respective mode and save the old CPSR to SPSR of new mode.
+    spsr.value = cpsr.value;
+    cpsr.value = newCpsr.value;
+
+    // Preserve the address of the next instruction in the appropriate LR.
+    // The current PC value is 8 bytes ahead of the instruction currently being
+    // executed (unless IRQ/FIQ).
+    var pc = this.pc;
+    if (exception != ArmException.irq && exception != ArmException.fiq) {
+      pc -= 8;
+    }
+    if (exception != ArmException.reset) {
+      gprs.lr = exception == ArmException.dataAbort ? pc + 8 : pc + 4;
+    }
+
+    // Force the PC to fetch the next instruction from the relevant vector.
+    gprs.pc = exception.code;
   }
 
   /// Single-steps the CPU, that is, fetches and executes a single instruction.

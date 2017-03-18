@@ -7,5 +7,8 @@ class _ArmInstruction$SWI extends Instruction {
       : super._(condition: condition, name: 'SWI');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  int execute(Cpu cpu) {
+    cpu.raise(ArmException.softwareInterrupt);
+    return 3;
+  }
 }
