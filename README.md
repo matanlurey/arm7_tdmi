@@ -1,5 +1,7 @@
 # arm7_tdmi
 
+[![Build Status](https://travis-ci.org/matanlurey/arm7_tdmi.svg?branch=master)](https://travis-ci.org/matanlurey/arm7_tdmi)
+
 An emulator for the ARM7/TDMI processor.
 
 This project is primarily academic/educational, and prefers idiomatic Dart and
