@@ -3,13 +3,7 @@ import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
-/// Helpers for generating one or more values to be used by CPU instructions.
-///
-/// For example, addressing mode 1 generates shifter operand and shift carry out
-/// values used directly by the AND instruction.  The generated values may be
-/// stored directly on the CPU, as is the case for addressing mode 1.
-
-/// An encoding for a data-processing instruction shifter_operand.
+/// An encoding for a data-processing instruction's shifter operand.
 abstract class ShifterOperandEncoding {
   final int _shifterOperand;
 
@@ -62,8 +56,8 @@ class RegisterShift extends ShifterOperandEncoding {
 
 /// ARM Addressing mode 1.
 ///
-/// Addressing mode 1 generates values for data-processing instructions. these
-/// values are stored directly on the CPU.
+/// This mode generates the shifter operand values for a data-processing
+/// instruction.  These auxiliary values are stored directly on the [Cpu].
 abstract class AddressingMode1 {
   static const REGISTER_OR_LSL_IMM = 0x00;
   static const LSL_REG = 0x1;
