@@ -30,7 +30,7 @@ abstract class AddressingMode1 {
     int rs = bitRange(instruction, 11, 8);
     // Register whose value is to be shifted.
     int rm = bitRange(instruction, 3, 0);
-    int shiftType = instruction & 0x60; //bitRange(instruction, 6, 5);
+    int shiftType = instruction & 0x60;
 
     // TODO: Assign constants to these magic numbers.
     switch (shiftType) {
