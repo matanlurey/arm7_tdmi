@@ -366,10 +366,7 @@ class ArmDecoder {
     throw new ArgumentError('Could not decode opcode 0x${hexOp}');
   }
 
-  Instruction _undefined(int iw) {
-    // final format = ...
-    throw new UnimplementedError();
-  }
+  Instruction _undefined(_) => const _Undefined();
 
   Instruction _decodeLDR$STR(int iw) {
     final format = new SingleDataTransferFormat(iw);
@@ -494,4 +491,20 @@ class ArmDecoder {
   Instruction _decodeCDP(int iw) {
     throw new UnimplementedError();
   }
+}
+
+class _Undefined implements Instruction {
+  const _Undefined();
+
+  @override
+  ArmCondition get condition => ArmCondition.AL;
+
+  @override
+  int execute(Cpu cpu) {
+    cpu.raise(ArmException.undefinedInstruction);
+    return 3;
+  }
+
+  @override
+  String get name => 'UNDEFINED';
 }
