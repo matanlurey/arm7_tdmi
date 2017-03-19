@@ -137,10 +137,10 @@ class Cpu {
   ///    - LSR Logical shift right.
   ///    - ROR Rotate right.
   ///    - RRX Rotate right with extend.
-  int shifterOperand;
+  int shifterOperand = 0;
 
   /// Jesus fuck so much docs.
-  bool shifterCarryOut;
+  bool shifterCarryOut = false;
 
   /// GPRS.
   Registers get gprs => _registers;
