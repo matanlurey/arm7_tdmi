@@ -12,7 +12,7 @@ typedef void ImmediateShift(Cpu cpu, {int shiftAmount, int rm});
 /// A [Function] that executes a Register shift.
 typedef void RegisterShift(Cpu cpu, {int rs, int rm});
 
-/// Returns a [ShifterOperand] that performs an immediate-shift.
+/// Returns a [ShifterOperand] that performs an [ImmediateShift].
 ShifterOperand _createImmediateShifter(
   Cpu cpu,
   ImmediateShift callback,
@@ -26,7 +26,7 @@ ShifterOperand _createImmediateShifter(
       );
 }
 
-/// Returns a [ShifterOperand] that performs an register-shift.
+/// Returns a [ShifterOperand] that performs a [RegisterShift].
 ShifterOperand _createRegisterShifter(
   Cpu cpu,
   RegisterShift callback,
@@ -40,7 +40,7 @@ ShifterOperand _createRegisterShifter(
       );
 }
 
-/// An encoding for a data-processing instruction's shifter operand.
+/// An encoding for a data-processing instruction's [ShifterOperand].
 abstract class ShifterOperandEncoding {
   final int _shifterOperand;
 
@@ -106,9 +106,10 @@ abstract class AddressingMode1 {
   static const ROR_REG = 0x7;
   static const RRX = 0x06;
 
-  /// Returns a callback that computes auxiliary shifter values from
-  /// [instruction] and stores the values on [cpu].
-  static Function createShifterOperandCallback(Cpu cpu, int instruction) {
+  /// Decodes the [ShifterOperand] for [instruction].
+  ///
+  /// The returned operand will execute on [cpu].
+  static ShifterOperand decodeShifterOperand(Cpu cpu, int instruction) {
     var format = new DataProcessingFormat(instruction);
     if (format.i) {
       var encoding = new Immediate32(format.operand2);
