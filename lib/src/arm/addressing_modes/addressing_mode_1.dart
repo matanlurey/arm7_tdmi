@@ -3,6 +3,43 @@ import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
+/// A data-processing instruction's shifter operand.
+typedef void ShifterOperand();
+
+/// A [Function] that executes an immediate shift.
+typedef void ImmediateShift(Cpu cpu, {int shiftAmount, int rm});
+
+/// A [Function] that executes a Register shift.
+typedef void RegisterShift(Cpu cpu, {int rs, int rm});
+
+/// Returns a [ShifterOperand] that performs an immediate-shift.
+ShifterOperand _createImmediateShifter(
+  Cpu cpu,
+  ImmediateShift callback,
+  int shifterOperand,
+) {
+  var encoding = new ImmediateShiftEncoding(shifterOperand);
+  return () => callback(
+        cpu,
+        shiftAmount: encoding.shiftAmount,
+        rm: encoding.rm,
+      );
+}
+
+/// Returns a [ShifterOperand] that performs an register-shift.
+ShifterOperand _createRegisterShifter(
+  Cpu cpu,
+  RegisterShift callback,
+  int shifterOperand,
+) {
+  var encoding = new RegisterShiftEncoding(shifterOperand);
+  return () => callback(
+        cpu,
+        rs: encoding.rs,
+        rm: encoding.rm,
+      );
+}
+
 /// An encoding for a data-processing instruction's shifter operand.
 abstract class ShifterOperandEncoding {
   final int _shifterOperand;
@@ -25,9 +62,9 @@ class Immediate32 extends ShifterOperandEncoding {
 }
 
 /// A [ShifterOperandEncoding] for an immediate value with an optional shift.
-class ImmediateShift extends ShifterOperandEncoding {
+class ImmediateShiftEncoding extends ShifterOperandEncoding {
   @literal
-  ImmediateShift(int shifterOperand) : super(shifterOperand);
+  ImmediateShiftEncoding(int shifterOperand) : super(shifterOperand);
 
   /// Referred to as 'shift_imm' in the official arm docs.
   int get shiftAmount => _bitRange(11, 7);
@@ -40,9 +77,9 @@ class ImmediateShift extends ShifterOperandEncoding {
 }
 
 /// A [ShifterOperandEncoding] for a register value with an optional shift.
-class RegisterShift extends ShifterOperandEncoding {
+class RegisterShiftEncoding extends ShifterOperandEncoding {
   @literal
-  RegisterShift(int shifterOperand) : super(shifterOperand);
+  RegisterShiftEncoding(int shifterOperand) : super(shifterOperand);
 
   /// The address of the register containing the shift amount.
   int get rs => _bitRange(11, 8);
@@ -74,103 +111,34 @@ abstract class AddressingMode1 {
   static Function createShifterOperandCallback(Cpu cpu, int instruction) {
     var format = new DataProcessingFormat(instruction);
     if (format.i) {
-      return create8BitImm(cpu, instruction);
+      var encoding = new Immediate32(format.operand2);
+      return () => immediate(
+            cpu,
+            rotate: encoding.rotate,
+            immediate: encoding.immediate,
+          );
     }
 
     int shiftType = bitRange(format.operand2, 3, 0);
     switch (shiftType) {
       case REGISTER_OR_LSL_IMM:
-        return createLSLImm(cpu, format.operand2);
+        return _createImmediateShifter(cpu, shiftLSLImm, format.operand2);
       case LSL_REG:
-        return createLSLReg(cpu, format.operand2);
+        return _createRegisterShifter(cpu, shiftLSLReg, format.operand2);
       case LSR_IMM:
-        return createLSRImm(cpu, format.operand2);
+        return _createImmediateShifter(cpu, shiftLSRImm, format.operand2);
       case LSR_REG:
-        return createLSRReg(cpu, format.operand2);
+        return _createRegisterShifter(cpu, shiftLSRReg, format.operand2);
       case ASR_IMM:
-        return createASRImm(cpu, format.operand2);
+        return _createImmediateShifter(cpu, shiftASRImm, format.operand2);
       case ASR_REG:
-        return createASRReg(cpu, format.operand2);
+        return _createRegisterShifter(cpu, shiftASRReg, format.operand2);
       case ROR_IMM:
-        return createRORImm(cpu, format.operand2);
+        return _createImmediateShifter(cpu, shiftRORImm, format.operand2);
       case ROR_REG:
-        return createRORReg(cpu, format.operand2);
+        return _createRegisterShifter(cpu, shiftRORReg, format.operand2);
     }
     throw new UnsupportedError('$instruction');
-  }
-
-  @visibleForTesting
-  static Function create8BitImm(Cpu cpu, int shifterOperand) {
-    var encoding = new Immediate32(shifterOperand);
-    return () => immediate(
-          cpu,
-          rotate: encoding.rotate,
-          immediate: encoding.immediate,
-        );
-  }
-
-  @visibleForTesting
-  static Function createLSLImm(Cpu cpu, int shifterOperand) {
-    var encoding = new ImmediateShift(shifterOperand);
-    return () => shiftLSLImm(
-          cpu,
-          shiftAmount: encoding.shiftAmount,
-          rm: encoding.rm,
-        );
-  }
-
-  @visibleForTesting
-  static Function createLSLReg(Cpu cpu, int shifterOperand) {
-    var encoding = new RegisterShift(shifterOperand);
-    return () => shiftLSLReg(cpu, rs: encoding.rs, rm: encoding.rm);
-  }
-
-  @visibleForTesting
-  static Function createLSRImm(Cpu cpu, int shifterOperand) {
-    var encoding = new ImmediateShift(shifterOperand);
-    return () => shiftLSRImm(
-          cpu,
-          shiftAmount: encoding.shiftAmount,
-          rm: encoding.rm,
-        );
-  }
-
-  @visibleForTesting
-  static Function createLSRReg(Cpu cpu, int shifterOperand) {
-    var encoding = new RegisterShift(shifterOperand);
-    return () => shiftLSRReg(cpu, rs: encoding.rs, rm: encoding.rm);
-  }
-
-  @visibleForTesting
-  static Function createASRImm(Cpu cpu, int shifterOperand) {
-    var encoding = new ImmediateShift(shifterOperand);
-    return () => shiftASRImm(
-          cpu,
-          shiftAmount: encoding.shiftAmount,
-          rm: encoding.rm,
-        );
-  }
-
-  @visibleForTesting
-  static Function createASRReg(Cpu cpu, int shifterOperand) {
-    var encoding = new RegisterShift(shifterOperand);
-    return () => shiftASRReg(cpu, rs: encoding.rs, rm: encoding.rm);
-  }
-
-  @visibleForTesting
-  static Function createRORImm(Cpu cpu, int shifterOperand) {
-    var encoding = new ImmediateShift(shifterOperand);
-    return () => shiftRORImm(
-          cpu,
-          shiftAmount: encoding.shiftAmount,
-          rm: encoding.rm,
-        );
-  }
-
-  @visibleForTesting
-  static Function createRORReg(Cpu cpu, int shifterOperand) {
-    var encoding = new RegisterShift(shifterOperand);
-    return () => shiftRORReg(cpu, rs: encoding.rs, rm: encoding.rm);
   }
 
   /// Provides an [immediate] operand to a data-processing instruction,
