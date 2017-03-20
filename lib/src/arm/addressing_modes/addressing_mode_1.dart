@@ -160,7 +160,7 @@ abstract class AddressingMode1 {
     }
   }
 
-  /// Logically shifts the value in register [rm] left by [shiftAmount].
+  /// Logical shift left by immediate.
   static void shiftLSLImm(
     cpu, {
     @required int shiftAmount,
@@ -180,6 +180,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Logical shift left by register.
   static void shiftLSLReg(cpu, {@required int rs, @required int rm}) {
     var gprs = cpu.gprs;
 
@@ -200,6 +201,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Logical shift right by immediate.
   static void shiftLSRImm(
     cpu, {
     @required int shiftAmount,
@@ -217,6 +219,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Logical shift right by register.
   static void shiftLSRReg(cpu, {@required int rs, @required int rm}) {
     var gprs = cpu.gprs;
 
@@ -237,6 +240,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Arithmetic shift right by immediate.
   static void shiftASRImm(
     cpu, {
     @required int shiftAmount,
@@ -259,6 +263,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Arithmetic shift right by register.
   static void shiftASRReg(cpu, {@required int rs, @required int rm}) {
     var gprs = cpu.gprs;
 
@@ -281,6 +286,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Rotate right by immediate.
   static void shiftRORImm(
     cpu, {
     @required int shiftAmount,
@@ -300,6 +306,7 @@ abstract class AddressingMode1 {
     }
   }
 
+  /// Rotate right by register.
   static void shiftRORReg(cpu, {@required int rs, @required int rm}) {
     var gprs = cpu.gprs;
 
