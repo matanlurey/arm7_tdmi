@@ -40,7 +40,7 @@ void main() {
       expect(cpu.shifterCarryOut, expectedShifterCarryOut);
     }
 
-    group('immediateValue rotate an immediate value', () {
+    group('immediateValue should rotate an immediate value', () {
       void testImmediateValue({
         @required bool cpsrC,
         @required int rotate,
