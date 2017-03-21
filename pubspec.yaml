@@ -11,7 +11,7 @@ environment:
   sdk: '>=1.22.0 <2.0.0'
 
 dependencies:
-  binary: '^0.1.3'
+  binary: '^0.1.2 '
   func: '^0.1.1'
   quiver: '^0.24.0'
 

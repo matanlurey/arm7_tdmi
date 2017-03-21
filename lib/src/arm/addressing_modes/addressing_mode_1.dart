@@ -4,41 +4,8 @@ import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
 /// A data-processing instruction's shifter operand.
+/// TODO(kharland): Document when this should be executed.
 typedef void ShifterOperand();
-
-/// A [Function] that executes an immediate shift.
-typedef void ImmediateShift(Cpu cpu, {int shiftAmount, int rm});
-
-/// A [Function] that executes a Register shift.
-typedef void RegisterShift(Cpu cpu, {int rs, int rm});
-
-/// Returns a [ShifterOperand] that performs an [ImmediateShift].
-ShifterOperand _createImmediateShifter(
-  Cpu cpu,
-  ImmediateShift callback,
-  int shifterOperand,
-) {
-  var encoding = new ImmediateShiftEncoding(shifterOperand);
-  return () => callback(
-        cpu,
-        shiftAmount: encoding.shiftAmount,
-        rm: encoding.rm,
-      );
-}
-
-/// Returns a [ShifterOperand] that performs a [RegisterShift].
-ShifterOperand _createRegisterShifter(
-  Cpu cpu,
-  RegisterShift callback,
-  int shifterOperand,
-) {
-  var encoding = new RegisterShiftEncoding(shifterOperand);
-  return () => callback(
-        cpu,
-        rs: encoding.rs,
-        rm: encoding.rm,
-      );
-}
 
 /// An encoding for a data-processing instruction's [ShifterOperand].
 abstract class ShifterOperandEncoding {
@@ -67,10 +34,7 @@ class ImmediateShiftEncoding extends ShifterOperandEncoding {
   ImmediateShiftEncoding(int shifterOperand) : super(shifterOperand);
 
   /// Referred to as 'shift_imm' in the official arm docs.
-  int get shiftAmount => _bitRange(11, 7);
-
-  /// Specified in arm docs but no clear usage. consider deleting.
-  int get shift => _bitRange(6, 5);
+  int get shift => _bitRange(11, 7);
 
   /// The address of the register containing the value to be shifted.
   int get rm => _bitRange(3, 0);
@@ -83,9 +47,6 @@ class RegisterShiftEncoding extends ShifterOperandEncoding {
 
   /// The address of the register containing the shift amount.
   int get rs => _bitRange(11, 8);
-
-  /// Specified in arm docs but no clear usage. consider deleting.
-  int get shift => _bitRange(6, 5);
 
   /// The address of the register containing the value to be shifted.
   int get rm => _bitRange(3, 0);
@@ -113,11 +74,8 @@ abstract class AddressingMode1 {
     var format = new DataProcessingFormat(instruction);
     if (format.i) {
       var encoding = new Immediate32(format.operand2);
-      return () => immediate(
-            cpu,
-            rotate: encoding.rotate,
-            immediate: encoding.immediate,
-          );
+      return () => immediateValue(cpu,
+          rotate: encoding.rotate, immediate: encoding.immediate);
     }
 
     int shiftType = bitRange(format.operand2, 3, 0);
@@ -144,7 +102,7 @@ abstract class AddressingMode1 {
 
   /// Provides an [immediate] operand to a data-processing instruction,
   /// optionally rotated by [rotate].
-  static void immediate(
+  static void immediateValue(
     Cpu cpu, {
     @required int rotate,
     @required int immediate,
@@ -161,22 +119,18 @@ abstract class AddressingMode1 {
   }
 
   /// Logical shift left by immediate.
-  static void shiftLSLImm(
-    cpu, {
-    @required int shiftAmount,
-    @required int rm,
-  }) {
+  static void shiftLSLImm(cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
-    if (shiftAmount == 0) {
+    if (shift == 0) {
       // Register operand
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
     } else {
-      // shiftAmount > 0
-      cpu.shifterOperand = gprs[rm] << shiftAmount;
-      cpu.shifterCarryOut = isSet(gprs[rm], 32 - shiftAmount);
+      // shift > 0
+      cpu.shifterOperand = gprs[rm] << shift;
+      cpu.shifterCarryOut = isSet(gprs[rm], 32 - shift);
     }
   }
 
@@ -185,14 +139,14 @@ abstract class AddressingMode1 {
     var gprs = cpu.gprs;
 
     // TODO: consume 1 cpu cycle.
-    int shiftAmount = bitRange(gprs[rs], 7, 0);
-    if (shiftAmount == 0) {
+    int shift = bitRange(gprs[rs], 7, 0);
+    if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
-    } else if (shiftAmount < 32) {
-      cpu.shifterOperand = gprs[rm] << shiftAmount;
-      cpu.shifterCarryOut = isSet(gprs[rm], 32 - shiftAmount);
-    } else if (shiftAmount == 32) {
+    } else if (shift < 32) {
+      cpu.shifterOperand = gprs[rm] << shift;
+      cpu.shifterCarryOut = isSet(gprs[rm], 32 - shift);
+    } else if (shift == 32) {
       cpu.shifterOperand = 0;
       cpu.shifterCarryOut = isSet(gprs[rm], 0);
     } else {
@@ -202,20 +156,16 @@ abstract class AddressingMode1 {
   }
 
   /// Logical shift right by immediate.
-  static void shiftLSRImm(
-    cpu, {
-    @required int shiftAmount,
-    @required int rm,
-  }) {
+  static void shiftLSRImm(cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
-    if (shiftAmount == 0) {
+    if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = isSet(gprs[rm], 31);
     } else {
-      cpu.shifterOperand = gprs[rm] >> shiftAmount;
-      cpu.shifterCarryOut = isSet(gprs[rm], shiftAmount - 1);
+      cpu.shifterOperand = gprs[rm] >> shift;
+      cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     }
   }
 
@@ -224,14 +174,14 @@ abstract class AddressingMode1 {
     var gprs = cpu.gprs;
 
     // TODO: consume 1 cpu cycle.
-    int shiftAmount = bitRange(gprs[rs], 7, 0);
-    if (shiftAmount == 0) {
+    int shift = bitRange(gprs[rs], 7, 0);
+    if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
-    } else if (shiftAmount < 32) {
-      cpu.shifterOperand = gprs[rm] >> shiftAmount;
-      cpu.shifterCarryOut = isSet(gprs[rm], shiftAmount - 1);
-    } else if (shiftAmount == 32) {
+    } else if (shift < 32) {
+      cpu.shifterOperand = gprs[rm] >> shift;
+      cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
+    } else if (shift == 32) {
       cpu.shifterOperand = 0;
       cpu.shifterCarryOut = isSet(gprs[rm], 31);
     } else {
@@ -241,15 +191,11 @@ abstract class AddressingMode1 {
   }
 
   /// Arithmetic shift right by immediate.
-  static void shiftASRImm(
-    cpu, {
-    @required int shiftAmount,
-    @required int rm,
-  }) {
+  static void shiftASRImm(cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
-    if (shiftAmount == 0) {
+    if (shift == 0) {
       if (isClear(gprs[rm], 31)) {
         cpu.shifterOperand = 0;
         cpu.shifterCarryOut = false;
@@ -258,8 +204,8 @@ abstract class AddressingMode1 {
         cpu.shifterCarryOut = true;
       }
     } else {
-      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shiftAmount);
-      cpu.shifterCarryOut = isSet(gprs[rm], shiftAmount - 1);
+      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shift);
+      cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     }
   }
 
@@ -268,13 +214,13 @@ abstract class AddressingMode1 {
     var gprs = cpu.gprs;
 
     // TODO: consume 1 cpu cycle.
-    int shiftAmount = bitRange(gprs[rs], 7, 0);
-    if (shiftAmount == 0) {
+    int shift = bitRange(gprs[rs], 7, 0);
+    if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
-    } else if (shiftAmount < 32) {
-      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shiftAmount);
-      cpu.shifterCarryOut = isSet(gprs[rm], shiftAmount - 1);
+    } else if (shift < 32) {
+      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shift);
+      cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     } else {
       if (isClear(gprs[rm], 31)) {
         cpu.shifterOperand = 0;
@@ -287,22 +233,18 @@ abstract class AddressingMode1 {
   }
 
   /// Rotate right by immediate.
-  static void shiftRORImm(
-    cpu, {
-    @required int shiftAmount,
-    @required int rm,
-  }) {
+  static void shiftRORImm(cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
-    if (shiftAmount == 0) {
+    if (shift == 0) {
       // RRX
       int c = cpu.cpsr.c ? 1 : 0;
       cpu.shifterOperand = (c << 31) | (gprs[rm] >> 1);
       cpu.shifterCarryOut = isClear(gprs[rm], 0);
     } else {
-      cpu.shifterOperand = rotateRight(gprs[rm], shiftAmount);
-      cpu.shifterCarryOut = isSet(gprs[rm], shiftAmount - 1);
+      cpu.shifterOperand = rotateRight(gprs[rm], shift);
+      cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     }
   }
 
@@ -311,9 +253,9 @@ abstract class AddressingMode1 {
     var gprs = cpu.gprs;
 
     // TODO: consume 1 cpu cycle.
-    int shiftAmount = bitRange(gprs[rs], 7, 0);
+    int shift = bitRange(gprs[rs], 7, 0);
     int rsLeastSignificantByte = bitRange(gprs[rs], 4, 0); // + 1 bit.
-    if (shiftAmount == 0) {
+    if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
     } else if (rsLeastSignificantByte == 0) {
@@ -324,4 +266,40 @@ abstract class AddressingMode1 {
       cpu.shifterCarryOut = isSet(gprs[rm], rsLeastSignificantByte - 1);
     }
   }
+}
+
+/// A shifter operand that executes an immediate shift.
+@visibleForTesting
+typedef void ImmediateShift(Cpu cpu, {int shift, int rm});
+
+/// A shifter operand that executes a Register shift.
+@visibleForTesting
+typedef void RegisterShift(Cpu cpu, {int rs, int rm});
+
+/// Returns a [ShifterOperand] that performs an [ImmediateShift].
+ShifterOperand _createImmediateShifter(
+  Cpu cpu,
+  ImmediateShift callback,
+  int shifterOperand,
+) {
+  var encoding = new ImmediateShiftEncoding(shifterOperand);
+  return () => callback(
+        cpu,
+        shift: encoding.shift,
+        rm: encoding.rm,
+      );
+}
+
+/// Returns a [ShifterOperand] that performs a [RegisterShift].
+ShifterOperand _createRegisterShifter(
+  Cpu cpu,
+  RegisterShift callback,
+  int shifterOperand,
+) {
+  var encoding = new RegisterShiftEncoding(shifterOperand);
+  return () => callback(
+        cpu,
+        rs: encoding.rs,
+        rm: encoding.rm,
+      );
 }
