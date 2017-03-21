@@ -108,7 +108,6 @@ abstract class AddressingMode1 {
     @required int immediate,
   }) {
     // TODO: consume 1 cycle
-
     cpu.shifterOperand = rotateRight(immediate, rotate * 2);
     if (rotate == 0) {
       cpu.shifterCarryOut = cpu.cpsr.c;
@@ -136,9 +135,9 @@ abstract class AddressingMode1 {
 
   /// Logical shift left by register.
   static void shiftLSLReg(cpu, {@required int rs, @required int rm}) {
+    // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
-    // TODO: consume 1 cpu cycle.
     int shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
@@ -171,9 +170,9 @@ abstract class AddressingMode1 {
 
   /// Logical shift right by register.
   static void shiftLSRReg(cpu, {@required int rs, @required int rm}) {
+    // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
-    // TODO: consume 1 cpu cycle.
     int shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
@@ -211,9 +210,9 @@ abstract class AddressingMode1 {
 
   /// Arithmetic shift right by register.
   static void shiftASRReg(cpu, {@required int rs, @required int rm}) {
+    // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
-    // TODO: consume 1 cpu cycle.
     int shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
@@ -250,9 +249,9 @@ abstract class AddressingMode1 {
 
   /// Rotate right by register.
   static void shiftRORReg(cpu, {@required int rs, @required int rm}) {
+    // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
-    // TODO: consume 1 cpu cycle.
     int shift = bitRange(gprs[rs], 7, 0);
     int rsLeastSignificantByte = bitRange(gprs[rs], 4, 0); // + 1 bit.
     if (shift == 0) {
@@ -272,7 +271,7 @@ abstract class AddressingMode1 {
 @visibleForTesting
 typedef void ImmediateShift(Cpu cpu, {int shift, int rm});
 
-/// A shifter operand that executes a Register shift.
+/// A shifter operand that executes a register shift.
 @visibleForTesting
 typedef void RegisterShift(Cpu cpu, {int rs, int rm});
 
