@@ -25,7 +25,11 @@ void main() {
       reason: 'Should have stored #0 in r1',
       skip: 'TO BE FIXED',
     );
-    expect(cpu.gprs[2], 1, reason: 'Should have stored #1 in r2');
+    expect(
+      cpu.gprs[2],
+      1,
+      reason: 'Should have stored #1 in r2',
+    );
     expect(
       cpu.gprs[0],
       1,
@@ -66,13 +70,20 @@ void main() {
   });
 
   test('Undefined instruction trap should be triggered', () {
-    final rom = createRom([0xFF000000]);
+    final rom = createRom([0xFF000000 /* Undefined Instruction */]);
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
     cpu.step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step(); // Execute undefined instruction.
-    // expect(cpu.pc, 0x00000004);
-    // expect(cpu.mode, Mode.und);
+    expect(
+      cpu.pc,
+      0x00000004,
+      reason: ''
+          'Next read should fetch instruction from the undefined instruction '
+          'interrupt (0x00000004)',
+      skip: 'TO BE FIXED',
+    );
+    expect(cpu.mode, Mode.und, skip: 'TO BE FIXED');
   });
 
   test('Software interrupt should raise a SWI exception', () {
@@ -98,16 +109,16 @@ void main() {
     const abortInst = 0xE5901000;
     final rom = createRom([
       0xe51f0000, // ldr r0, [pc, #-0]
-      abortInst, // ldr r1, [r0]
+      abortInst,  // ldr r1, [r0]
       0x12345678, // embedded constant for ldr r0 instruction
     ]);
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
     cpu.step(); // Reset branch.
     expect(cpu.pc, resetLabel);
-    /*
-    cpu.step();
 
+    /*
     // R0 should contain 0x12345678 now.
+    cpu.step();
     expect(cpu.gprs[0], 0x12345678);
 
     // Trying to read from memory address 0x12345678 should raise a data-abort.
