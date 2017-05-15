@@ -268,8 +268,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          // ???
-          op1: format.rn,
+          rn: format.rn,
           op2: format.operand2,
         );
       // ADC

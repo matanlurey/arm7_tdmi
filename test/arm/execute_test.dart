@@ -19,10 +19,50 @@ void main() {
     for (var i = 0; i < 3; i++) {
       cpu.step();
     }
-    expect(cpu.cpsr.n, isFalse);
-    // expect(cpu.cpsr.z, isTrue);
-    // expect(cpu.cpsr.c, isTrue);
-    // expect(cpu.cpsr.v, isFalse);
+    expect(
+      cpu.gprs[1],
+      0,
+      reason: 'Should have stored #0 in r1',
+      skip: 'TO BE FIXED',
+    );
+    expect(cpu.gprs[2], 1, reason: 'Should have stored #1 in r2');
+    expect(
+      cpu.gprs[0],
+      1,
+      reason: 'Should have resulted in `1` in r0',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.n,
+      isFalse,
+      reason: ''
+          'N = 0; the result is 0, which is considered positive, and so '
+          'the N (negative) bit should be set to 0.',
+    );
+    expect(
+      cpu.cpsr.z,
+      isTrue,
+      reason: 'Z = 1; the result is 0, so the Z (zero) bit should be set to 1',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.c,
+      isTrue,
+      reason: ''
+          'C = 1; we lost some data because the result did not fit into 32 bits'
+          ', so the processor should indicate this by setting C (carry) to 1',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.v,
+      isFalse,
+      reason: ''
+          'V = 0; from a two\'s complement signed-arithmetic viewpoint, '
+          '0xffffffff really means -1, so the operation we did was really (-1) '
+          '+ 1 = 0. That operation clearly does not overflow, so V (overflow) '
+          'should be set to 0',
+      skip: 'TO BE FIXED',
+    );
   });
 
   test('Undefined instruction trap should be triggered', () {

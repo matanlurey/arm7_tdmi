@@ -160,15 +160,15 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op1,
+    @required int rn,
     @required int op2,
   }) =>
       new _ArmInstruction$ADD(
         condition: cond,
         s: s,
         rd: rd,
-        op1: op1,
-        op2: op2,
+        rn: rn,
+        rop2: op2,
       );
 
   /// Creates a _ADC_ (add with carry) instruction.
@@ -812,4 +812,7 @@ abstract class Instruction {
   ///
   /// Returns how many cycles the instruction takes to execute.
   int execute(Cpu cpu);
+
+  @override
+  String toString() => '$Instruction {$name}';
 }
