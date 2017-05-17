@@ -101,8 +101,8 @@ abstract class _ShifterRunner {
   /// Executes this runner's shifter.
   ///
   /// [Cpu] is the cpu to execute on. [op1] and [op2] are the first and second
-  /// operands to the shifter, respectively.  The return string contains
-  /// debugging information for this run.
+  /// operands to the shifter, respectively.  Reason is a string describing this
+  /// test run.
   void run(Cpu cpu, int op1, int op2, String reason);
 }
 
