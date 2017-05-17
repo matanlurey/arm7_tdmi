@@ -42,7 +42,7 @@ import 'package:meta/meta.dart';
 /// ```
 class Registers {
   // Total size required to represent the registers.
-  static final _totalSize = Mode.modes.values.fold(0, (l, m) => l + m.size);
+  static final int _totalSize = Mode.modes.values.fold(0, (l, m) => l + m.size);
 
   /// Stack pointer index.
   @visibleForTesting
