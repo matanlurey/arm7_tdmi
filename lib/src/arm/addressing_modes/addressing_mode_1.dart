@@ -85,6 +85,17 @@ abstract class AddressingMode1 {
   static const ROR_REG = 0x7;
   static const RRX = 0x06;
 
+  static const _bitsToShifter = const <int, dynamic>{
+    REGISTER_OR_LSL_IMM: LSLImmediate,
+    LSL_REG: LSLRegister,
+    LSR_IMM: LSRImmediate,
+    LSR_REG: LSRRegister,
+    ASR_IMM: ASRImmediate,
+    ASR_REG: ASRRegister,
+    ROR_IMM: RORImmediate,
+    ROR_REG: RORRegister,
+  };
+
   /// Decodes the [LazyShifter] for [instruction].
   static LazyShifter decodeShifterOperand(Cpu cpu, int instruction) {
     var format = new DataProcessingFormat(instruction);
@@ -95,25 +106,17 @@ abstract class AddressingMode1 {
     }
 
     int shiftType = bitRange(format.operand2, 3, 0);
-    switch (shiftType) {
-      case REGISTER_OR_LSL_IMM:
-        return _lazyImmediateShifter(cpu, LSLImmediate, format.operand2);
-      case LSL_REG:
-        return _lazyRegisterShifter(cpu, LSLRegister, format.operand2);
-      case LSR_IMM:
-        return _lazyImmediateShifter(cpu, LSRImmediate, format.operand2);
-      case LSR_REG:
-        return _lazyRegisterShifter(cpu, LSRRegister, format.operand2);
-      case ASR_IMM:
-        return _lazyImmediateShifter(cpu, ASRImmediate, format.operand2);
-      case ASR_REG:
-        return _lazyRegisterShifter(cpu, ASRRegister, format.operand2);
-      case ROR_IMM:
-        return _lazyImmediateShifter(cpu, RORImmediate, format.operand2);
-      case ROR_REG:
-        return _lazyRegisterShifter(cpu, RORRegister, format.operand2);
+    var shifter = _bitsToShifter[shiftType];
+    if (shifter == null) {
+      throw new UnsupportedError('$instruction');
     }
-    throw new UnsupportedError('$instruction');
+
+    if (shifter is ImmediateShifter) {
+      return _lazyImmediateShifter(cpu, shifter, format.operand2);
+    } else {
+      assert(shifter is RegisterShifter);
+      return _lazyRegisterShifter(cpu, shifter, format.operand2);
+    }
   }
 
   /// Provides an [immediate] value to a data-processing instruction, optionally
@@ -308,11 +311,11 @@ abstract class AddressingMode1 {
 /// Returns a [LazyShifter] that performs an immediate shift.
 LazyShifter _lazyImmediateShifter(
   Cpu cpu,
-  ImmediateShifter callback,
-  int shifterOperand,
+  ImmediateShifter shifter,
+  int shifterBits,
 ) {
-  var encoding = new ImmediateShifterEncoding(shifterOperand);
-  return () => callback(
+  var encoding = new ImmediateShifterEncoding(shifterBits);
+  return () => shifter(
         cpu,
         shift: encoding.shift,
         rm: encoding.rm,
@@ -322,11 +325,11 @@ LazyShifter _lazyImmediateShifter(
 /// Returns a [LazyShifter] that performs a register shift.
 LazyShifter _lazyRegisterShifter(
   Cpu cpu,
-  RegisterShifter callback,
-  int shifterOperand,
+  RegisterShifter shifter,
+  int shifterBits,
 ) {
-  var encoding = new RegisterShifterEncoding(shifterOperand);
-  return () => callback(
+  var encoding = new RegisterShifterEncoding(shifterBits);
+  return () => shifter(
         cpu,
         rs: encoding.rs,
         rm: encoding.rm,
