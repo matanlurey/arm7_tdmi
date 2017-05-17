@@ -1,183 +1,337 @@
-import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
 import 'package:binary/binary.dart';
-import 'package:meta/meta.dart';
 import 'package:test/test.dart';
+
+import 'src/shifter_operand_tester.dart';
 
 void main() {
   group('$AddressingMode1', () {
-    Cpu cpu;
+    ShifterOperandTester tester;
 
-    /// Tests that [shifterOperand] sets [expectedShifterOperand] and
-    /// [expectedShifterCarryOut] on a [Cpu].
-    ///
-    /// [shift] is the amount to shift [valueToShift].  Both values are stored
-    /// in registers before [shifterOperand] is decoded.
-    ///
-    /// [cpsrC] is optional, and can be used to set the carry flag on the [Cpu]
-    /// before [shifterOperand] is decoded.
-    void testShifterOperand({
-      @required shifterOperand,
-      bool cpsrC: false,
-      @required int shift,
-      @required int valueToShift,
-      @required int expectedShifterOperand,
-      @required bool expectedShifterCarryOut,
-    }) {
-      var cpu = new Cpu.noExecution()
-        ..gprs[1] = shift // rs
-        ..gprs[2] = valueToShift // rm
-        ..cpsr.c = cpsrC;
+    final firstOperands = <int>[
+      uint32.min,
+      (uint32.max - uint32.min) ~/ 2,
+      uint32.max,
+    ];
 
-      if (shifterOperand is ImmediateShift) {
-        shifterOperand(cpu, shift: shift, rm: 2);
-      } else {
-        assert(shifterOperand is RegisterShift);
-        shifterOperand(cpu, rs: 1, rm: 2);
-      }
+    /* Common shifts (2nd operands) */
+    const shiftsLessThan32 = const <int>[0x1, 0x15, 0x1F];
+    const shiftsGreaterThan32 = const <int>[0x21, 0x40, 0x80, 0xFF];
+    const justZero = const <int>[0];
+    const just32 = const <int>[32];
 
-      expect(cpu.shifterOperand, expectedShifterOperand);
-      expect(cpu.shifterCarryOut, expectedShifterCarryOut);
+    void commonSetUp(shifter) {
+      tester = new ShifterOperandTester(shifter);
     }
 
+    tearDown(() {
+      tester = null;
+    });
+
     group('immediateValue should rotate an immediate value', () {
-      void testImmediateValue({
-        @required bool cpsrC,
-        @required int rotate,
-        @required int immediate,
-        @required int expectedShifterOperand,
-        @required bool expectedShifterCarryOut,
-      }) {
-        AddressingMode1.immediateValue(
-          cpu = new Cpu.noExecution()..cpsr.c = cpsrC,
-          rotate: rotate,
-          immediate: immediate,
-        );
-        expect(cpu.shifterOperand, expectedShifterOperand);
-        expect(cpu.shifterCarryOut, expectedShifterCarryOut);
-      }
+      int expectedShifterOperand(int immediate, int rotate, _) =>
+          rotateRight(immediate, rotate * 2);
+
+      final immediateValues = firstOperands.map(uint8.mask);
+
+      setUp(() {
+        commonSetUp(AddressingMode1.immediate);
+      });
 
       test('when rotation == 0', () {
-        testImmediateValue(
-            cpsrC: true,
-            rotate: 0,
-            immediate: 13,
-            expectedShifterOperand: 13,
-            expectedShifterCarryOut: true);
-        testImmediateValue(
-            cpsrC: false,
-            rotate: 0,
-            immediate: 13,
-            expectedShifterOperand: 13,
-            expectedShifterCarryOut: false);
+        tester.test(
+            firstOperands: immediateValues,
+            secondOperands: justZero, // rotations
+            expectedOperand: expectedShifterOperand,
+            expectedCarryOut: initialCarryFlag);
       });
 
       test('when rotation > 0', () {
-        int expectedShifterOperand = rotateRight(13, 4 * 2);
-        testImmediateValue(
-            cpsrC: true,
-            rotate: 4,
-            immediate: 13,
-            expectedShifterOperand: expectedShifterOperand,
-            expectedShifterCarryOut: int32.isNegative(expectedShifterOperand));
+        tester.test(
+            firstOperands: immediateValues,
+            secondOperands: const <int>[0x1, 0x5, 0x9, 0xD, 0xF],
+            expectedOperand: expectedShifterOperand,
+            expectedCarryOut: (int immediate, int rotate, _) =>
+                int32.isNegative(expectedShifterOperand(immediate, rotate, _)));
       });
     });
 
-    group('shiftLSLImm should logically shift-left an immediate value', () {
-      test('when shift == 0', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLImm,
-            cpsrC: false,
-            shift: 0,
-            valueToShift: 7,
-            expectedShifterOperand: 7,
-            expectedShifterCarryOut: false);
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLImm,
-            cpsrC: true,
-            shift: 0,
-            valueToShift: 7,
-            expectedShifterOperand: 7,
-            expectedShifterCarryOut: true);
+    group('LSLImmediate', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.LSLImmediate);
       });
 
-      test('when shift > 0', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLImm,
-            shift: 8,
-            valueToShift: 7,
-            expectedShifterOperand: 7 << 8,
-            expectedShifterCarryOut: isSet(7, 32 - 8));
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: initialCarryFlag);
+      });
+
+      test('shift > 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: llShift,
+            expectedCarryOut: (int op1, int shift, _) =>
+                isSet(op1, 32 - shift));
       });
     });
 
-    group('shiftLSLReg should logically shift-left a register value', () {
-      test('when shift == 0', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            cpsrC: true,
-            shift: 0,
-            valueToShift: 7,
-            expectedShifterOperand: 7,
-            expectedShifterCarryOut: true);
+    group('LSLRegister', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.LSLRegister);
       });
 
-      test('when shift < 32', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            shift: 15,
-            valueToShift: 7,
-            expectedShifterOperand: 7 << 15,
-            expectedShifterCarryOut: isSet(7, 32 - 15));
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            shift: 1,
-            valueToShift: 3,
-            expectedShifterOperand: 3 << 1,
-            expectedShifterCarryOut: isSet(1, 32 - 3));
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: initialCarryFlag);
       });
 
-      test('when shift == 32', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            cpsrC: false, // shifter carry out starts out false.
-            shift: 32,
-            valueToShift: 1,
-            expectedShifterOperand: 0,
-            expectedShifterCarryOut: isSet(1, 0));
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            cpsrC: false,
-            shift: 32,
-            valueToShift: 25,
-            expectedShifterOperand: 0,
-            expectedShifterCarryOut: isSet(25, 0));
+      test('shift < 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: llShift,
+            expectedCarryOut: (int op1, int shift, _) =>
+                isSet(op1, 32 - shift));
       });
 
-      test('when shift > 32', () {
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            cpsrC: true,
-            shift: 33,
-            valueToShift: 25,
-            expectedShifterOperand: 0,
-            expectedShifterCarryOut: false);
-        testShifterOperand(
-            shifterOperand: AddressingMode1.shiftLSLReg,
-            cpsrC: false,
-            shift: 100,
-            valueToShift: 1,
-            expectedShifterOperand: 0,
-            expectedShifterCarryOut: false);
+      test('shift == 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: just32,
+            expectedOperand: zero,
+            expectedCarryOut: (int op1, int shift, _) => isSet(op1, 0));
+      });
+
+      test('shift > 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsGreaterThan32,
+            expectedOperand: zero,
+            expectedCarryOut: (_, __, ___) => false);
       });
     });
 
-    group('shiftLSRImm', () {});
-    group('shiftLSRReg', () {});
-    group('shiftLSRImm', () {});
-    group('shiftASRImm', () {});
-    group('shiftASRReg', () {});
-    group('shiftRORImm', () {});
-    group('shiftRORReg', () {});
+    group('LSRImmediate', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.LSRImmediate);
+      });
+
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: zero,
+            expectedCarryOut: isOp1Negative);
+      });
+
+      test('shift > 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: lrShift,
+            expectedCarryOut: isLostBitSet);
+      });
+    });
+
+    group('LSRRegister', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.LSRRegister);
+      });
+
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: initialCarryFlag);
+      });
+
+      test('shift < 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: lrShift,
+            expectedCarryOut: isLostBitSet);
+      });
+
+      test('shift == 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: just32,
+            expectedOperand: zero,
+            expectedCarryOut: (int op1, _, __) => isSet(op1, 31));
+      });
+
+      test('shift > 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsGreaterThan32,
+            expectedOperand: zero,
+            expectedCarryOut: (_, __, ___) => false);
+      });
+    });
+
+    group('ASRImmediate', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.ASRImmediate);
+      });
+
+      group('shift == 0 and bit 31 of the operand is', () {
+        const shifts = justZero;
+
+        test('clear', () {
+          tester.test(
+              firstOperands: const <int>[0x7FFFFFFF, 0x01234567],
+              secondOperands: shifts,
+              expectedOperand: zero,
+              expectedCarryOut: isOp1Negative);
+        });
+
+        test('set', () {
+          tester.test(
+              firstOperands: const <int>[0xFFFFFFFF, 0x80000000],
+              secondOperands: shifts,
+              expectedOperand: uint32Max,
+              expectedCarryOut: isOp1Negative);
+        });
+      });
+
+      test('shift > 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: arShift,
+            expectedCarryOut: isLostBitSet);
+      });
+    });
+
+    group('ASRRegister', () {
+      setUp(() {
+        commonSetUp(AddressingMode1.ASRRegister);
+      });
+
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: initialCarryFlag);
+      });
+
+      test('shift < 32', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: arShift,
+            expectedCarryOut: isLostBitSet);
+      });
+
+      group('shift >= 32 and bit 31 of the input is', () {
+        final shifts = <int>[32]..addAll(shiftsGreaterThan32);
+
+        test('clear', () {
+          tester.test(
+              firstOperands: const <int>[0x7FFFFFFF, 0x01234567],
+              secondOperands: shifts,
+              expectedOperand: zero,
+              expectedCarryOut: isOp1Negative);
+        });
+
+        test('set', () {
+          tester.test(
+              firstOperands: const <int>[0xFFFFFFFF, 0x80000000],
+              secondOperands: shifts,
+              expectedOperand: uint32Max,
+              expectedCarryOut: isOp1Negative);
+        });
+      });
+    });
+
+    group('RORImmediate', () {
+      ShifterOperandTester tester;
+
+      setUp(() {
+        tester = new ShifterOperandTester(AddressingMode1.RORImmediate);
+      });
+
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: justZero,
+            expectedOperand: (int op1, _, bool carryFlag) {
+              int c = carryFlag ? 1 : 0;
+              return (c << 31) | (op1 >> 1);
+            },
+            expectedCarryOut: (int op1, _, __) => isClear(op1, 0));
+      });
+
+      test('shift > 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: shiftsLessThan32,
+            expectedOperand: (int op, int shift, bool _) =>
+                rotateRight(op, shift),
+            expectedCarryOut: isLostBitSet);
+      });
+    });
+
+    group('RORRegister', () {
+      ShifterOperandTester tester;
+
+      setUp(() {
+        tester = new ShifterOperandTester(AddressingMode1.RORRegister);
+      });
+
+      test('shift == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: const [0],
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: initialCarryFlag);
+      });
+
+      test('shift > 0 and bits shift[5..0] == 0', () {
+        tester.test(
+            firstOperands: firstOperands,
+            secondOperands: const [0xE0, 0xC0],
+            expectedOperand: unshiftedOp1,
+            expectedCarryOut: isOp1Negative);
+      });
+    });
   });
 }
+
+/// Computes a shifter operand of zero
+int zero(int _, int __, bool ___) => 0;
+
+/// Computes a shifter operand of the max unsigned 32-bit integer value.
+int uint32Max(_, __, ___) => uint32.max;
+
+/// Computes a shifter operand equal to [op1].
+int unshiftedOp1(int op1, int _, bool __) => op1;
+
+/// Computes a shifter operand by logically-right shifting [op1] by [shift].
+int lrShift(int op1, int shift, bool _) => op1 >> shift;
+
+/// Computes a shifter operand by logically-left shifting [op1] by [shift].
+int llShift(int op1, int shift, bool _) => op1 << shift;
+
+/// Computes a shifter operand by arithmetically-right shifting [op1] by [shift].
+int arShift(int op1, int shift, _) => uint32.arithmeticShiftRight(op1, shift);
+
+/// Computes a shifter carry out identical to the initial CPSR carry flag.
+bool initialCarryFlag(int _, int __, bool carryFlag) => carryFlag;
+
+/// Computes a shifter carry out of true iff [op1] is a negative 32-bit integer.
+bool isOp1Negative(int op1, int _, bool __) => int32.isNegative(op1);
+
+/// Computes a shifter carry out of true iff the last bit lost off the end of a
+/// right shift or rotation was set.
+bool isLostBitSet(int op1, int shift, bool _) => isSet(op1, shift - 1);

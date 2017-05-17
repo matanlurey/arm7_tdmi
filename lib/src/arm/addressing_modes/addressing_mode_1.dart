@@ -3,11 +3,28 @@ import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
-/// A data-processing instruction's shifter operand.
-/// TODO(kharland): Document when this should be executed.
-typedef void ShifterOperand();
+/// Lazily computes a data-processing instruction's shifter operand.
+///
+/// The avoid the ambiguity contained in the ARM documentation, this library
+/// refers to the callback that computes a shifter operand as a "shifter".  The
+/// phrase "shifter operand" refers to the auxiliary value stored on a [Cpu] as
+/// the result of executing a shifter.
+typedef void LazyShifter();
 
-/// An encoding for a data-processing instruction's [ShifterOperand].
+/// A shifter operand that executes an immediate shift.
+@visibleForTesting
+typedef void ImmediateShifter(Cpu cpu, {int shift, int rm});
+
+/// A shifter operand that executes a register shift.
+@visibleForTesting
+typedef void RegisterShifter(Cpu cpu, {int rs, int rm});
+
+/// A shifter operand that rotates the 8-bit value [immediate] by twice the
+/// value of [rotate].
+@visibleForTesting
+typedef void Immediate32Shifter(Cpu cpu, {int rotate, int immediate});
+
+/// An encoding for a data-processing instruction's shifter operand.
 abstract class ShifterOperandEncoding {
   final int _shifterOperand;
 
@@ -17,9 +34,9 @@ abstract class ShifterOperandEncoding {
 }
 
 /// A [ShifterOperandEncoding] for an immediate value with an optional rotation.
-class Immediate32 extends ShifterOperandEncoding {
+class Immediate32ShiftEncoding extends ShifterOperandEncoding {
   @literal
-  Immediate32(int shifterOperand) : super(shifterOperand);
+  Immediate32ShiftEncoding(int shifterOperand) : super(shifterOperand);
 
   /// The amount to rotate [immediate] by.
   int get rotate => _bitRange(11, 8);
@@ -33,7 +50,7 @@ class ImmediateShiftEncoding extends ShifterOperandEncoding {
   @literal
   ImmediateShiftEncoding(int shifterOperand) : super(shifterOperand);
 
-  /// Referred to as 'shift_imm' in the official arm docs.
+  /// The shift value, referred to as 'shift_imm' in the official arm docs.
   int get shift => _bitRange(11, 7);
 
   /// The address of the register containing the value to be shifted.
@@ -56,6 +73,9 @@ class RegisterShiftEncoding extends ShifterOperandEncoding {
 ///
 /// This mode generates the shifter operand values for a data-processing
 /// instruction.  These auxiliary values are stored directly on the [Cpu].
+///
+/// Shifters can be called directly or lazily after being decoded from an ARM
+/// instruction.
 abstract class AddressingMode1 {
   static const REGISTER_OR_LSL_IMM = 0x00;
   static const LSL_REG = 0x1;
@@ -67,42 +87,42 @@ abstract class AddressingMode1 {
   static const ROR_REG = 0x7;
   static const RRX = 0x06;
 
-  /// Decodes the [ShifterOperand] for [instruction].
+  /// Decodes the [LazyShifter] for [instruction].
   ///
   /// The returned operand will execute on [cpu].
-  static ShifterOperand decodeShifterOperand(Cpu cpu, int instruction) {
+  static LazyShifter decodeShifterOperand(Cpu cpu, int instruction) {
     var format = new DataProcessingFormat(instruction);
     if (format.i) {
-      var encoding = new Immediate32(format.operand2);
-      return () => immediateValue(cpu,
+      var encoding = new Immediate32ShiftEncoding(format.operand2);
+      return () => immediate(cpu,
           rotate: encoding.rotate, immediate: encoding.immediate);
     }
 
     int shiftType = bitRange(format.operand2, 3, 0);
     switch (shiftType) {
       case REGISTER_OR_LSL_IMM:
-        return _createImmediateShifter(cpu, shiftLSLImm, format.operand2);
+        return _lazyImmediateShifter(cpu, LSLImmediate, format.operand2);
       case LSL_REG:
-        return _createRegisterShifter(cpu, shiftLSLReg, format.operand2);
+        return _lazyRegisterShifter(cpu, LSLRegister, format.operand2);
       case LSR_IMM:
-        return _createImmediateShifter(cpu, shiftLSRImm, format.operand2);
+        return _lazyImmediateShifter(cpu, LSRImmediate, format.operand2);
       case LSR_REG:
-        return _createRegisterShifter(cpu, shiftLSRReg, format.operand2);
+        return _lazyRegisterShifter(cpu, LSRRegister, format.operand2);
       case ASR_IMM:
-        return _createImmediateShifter(cpu, shiftASRImm, format.operand2);
+        return _lazyImmediateShifter(cpu, ASRImmediate, format.operand2);
       case ASR_REG:
-        return _createRegisterShifter(cpu, shiftASRReg, format.operand2);
+        return _lazyRegisterShifter(cpu, ASRRegister, format.operand2);
       case ROR_IMM:
-        return _createImmediateShifter(cpu, shiftRORImm, format.operand2);
+        return _lazyImmediateShifter(cpu, RORImmediate, format.operand2);
       case ROR_REG:
-        return _createRegisterShifter(cpu, shiftRORReg, format.operand2);
+        return _lazyRegisterShifter(cpu, RORRegister, format.operand2);
     }
     throw new UnsupportedError('$instruction');
   }
 
   /// Provides an [immediate] operand to a data-processing instruction,
   /// optionally rotated by [rotate].
-  static void immediateValue(
+  static void immediate(
     Cpu cpu, {
     @required int rotate,
     @required int immediate,
@@ -118,12 +138,13 @@ abstract class AddressingMode1 {
   }
 
   /// Logical shift left by immediate.
-  static void shiftLSLImm(cpu, {@required int shift, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void LSLImmediate(Cpu cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
     if (shift == 0) {
-      // Register operand
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
     } else {
@@ -134,11 +155,13 @@ abstract class AddressingMode1 {
   }
 
   /// Logical shift left by register.
-  static void shiftLSLReg(cpu, {@required int rs, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void LSLRegister(Cpu cpu, {@required int rs, @required int rm}) {
     // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
-
     int shift = bitRange(gprs[rs], 7, 0);
+
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
@@ -149,18 +172,21 @@ abstract class AddressingMode1 {
       cpu.shifterOperand = 0;
       cpu.shifterCarryOut = isSet(gprs[rm], 0);
     } else {
+      // shift > 32
       cpu.shifterOperand = 0;
       cpu.shifterCarryOut = false;
     }
   }
 
   /// Logical shift right by immediate.
-  static void shiftLSRImm(cpu, {@required int shift, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void LSRImmediate(Cpu cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
     if (shift == 0) {
-      cpu.shifterOperand = gprs[rm];
+      cpu.shifterOperand = 0;
       cpu.shifterCarryOut = isSet(gprs[rm], 31);
     } else {
       cpu.shifterOperand = gprs[rm] >> shift;
@@ -169,7 +195,17 @@ abstract class AddressingMode1 {
   }
 
   /// Logical shift right by register.
-  static void shiftLSRReg(cpu, {@required int rs, @required int rm}) {
+  ///
+  /// Provides the unsigned value fo a register shifted right (divided by a
+  /// variable power of two). It is produced by the value of register [rm],
+  /// logically shifted right by the value in the least significant byte of
+  /// register [rs]. Zeros are inserted into the vacated bit positions. The
+  /// carry-out from the shifter is the last bit shifted out, which is zero if
+  /// the shift amount is more than 32, or the C flag if the shift amount is
+  /// zero.
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void LSRRegister(Cpu cpu, {@required int rs, @required int rm}) {
     // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
@@ -190,49 +226,51 @@ abstract class AddressingMode1 {
   }
 
   /// Arithmetic shift right by immediate.
-  static void shiftASRImm(cpu, {@required int shift, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void ASRImmediate(Cpu cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
     if (shift == 0) {
       if (isClear(gprs[rm], 31)) {
         cpu.shifterOperand = 0;
-        cpu.shifterCarryOut = false;
       } else {
-        cpu.shifterOperand = 0xFFFFFFFF;
-        cpu.shifterCarryOut = true;
+        cpu.shifterOperand = uint32.max;
       }
+      cpu.shifterCarryOut = int32.isNegative(gprs[rm]);
     } else {
-      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shift);
+      // shift > 0
+      cpu.shifterOperand = uint32.arithmeticShiftRight(gprs[rm], shift);
       cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     }
   }
 
   /// Arithmetic shift right by register.
-  static void shiftASRReg(cpu, {@required int rs, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void ASRRegister(Cpu cpu, {@required int rs, @required int rm}) {
     // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
-
     int shift = bitRange(gprs[rs], 7, 0);
+
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
     } else if (shift < 32) {
-      cpu.shifterOperand = arithmeticShiftRight(gprs[rm], shift);
+      cpu.shifterOperand = uint32.arithmeticShiftRight(gprs[rm], shift);
       cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     } else {
-      if (isClear(gprs[rm], 31)) {
-        cpu.shifterOperand = 0;
-        cpu.shifterCarryOut = false;
-      } else {
-        cpu.shifterOperand = 0xFFFFFFFF;
-        cpu.shifterCarryOut = true;
-      }
+      // shift >= 32
+      cpu.shifterOperand = int32.isNegative(gprs[rm]) ? uint32.max : 0;
+      cpu.shifterCarryOut = int32.isNegative(gprs[rm]);
     }
   }
 
   /// Rotate right by immediate.
-  static void shiftRORImm(cpu, {@required int shift, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void RORImmediate(Cpu cpu, {@required int shift, @required int rm}) {
     // TODO: consume 1 cycle
     var gprs = cpu.gprs;
 
@@ -242,43 +280,39 @@ abstract class AddressingMode1 {
       cpu.shifterOperand = (c << 31) | (gprs[rm] >> 1);
       cpu.shifterCarryOut = isClear(gprs[rm], 0);
     } else {
+      // shift > 0
       cpu.shifterOperand = rotateRight(gprs[rm], shift);
       cpu.shifterCarryOut = isSet(gprs[rm], shift - 1);
     }
   }
 
   /// Rotate right by register.
-  static void shiftRORReg(cpu, {@required int rs, @required int rm}) {
+  ///
+  /// See [RegisterShiftEncoding] for parameter documentation.
+  static void RORRegister(Cpu cpu, {@required int rs, @required int rm}) {
     // TODO: consume 1 cpu cycle.
     var gprs = cpu.gprs;
 
     int shift = bitRange(gprs[rs], 7, 0);
-    int rsLeastSignificantByte = bitRange(gprs[rs], 4, 0); // + 1 bit.
+    int shiftLSB = bitRange(gprs[rs], 4, 0); // + 1 bit.
+
     if (shift == 0) {
       cpu.shifterOperand = gprs[rm];
       cpu.shifterCarryOut = cpu.cpsr.c;
-    } else if (rsLeastSignificantByte == 0) {
+    } else if (shiftLSB == 0) {
       cpu.shifterOperand = gprs[rm];
-      cpu.shifterCarryOut = isSet(gprs[rm], 31);
+      cpu.shifterCarryOut = int32.isNegative(gprs[rm]);
     } else {
-      cpu.shifterOperand = rotateRight(gprs[rm], rsLeastSignificantByte);
-      cpu.shifterCarryOut = isSet(gprs[rm], rsLeastSignificantByte - 1);
+      cpu.shifterOperand = rotateRight(gprs[rm], shiftLSB);
+      cpu.shifterCarryOut = isSet(gprs[rm], shiftLSB - 1);
     }
   }
 }
 
-/// A shifter operand that executes an immediate shift.
-@visibleForTesting
-typedef void ImmediateShift(Cpu cpu, {int shift, int rm});
-
-/// A shifter operand that executes a register shift.
-@visibleForTesting
-typedef void RegisterShift(Cpu cpu, {int rs, int rm});
-
-/// Returns a [ShifterOperand] that performs an [ImmediateShift].
-ShifterOperand _createImmediateShifter(
+/// Returns a [LazyShifter] that performs an [ImmediateShifter].
+LazyShifter _lazyImmediateShifter(
   Cpu cpu,
-  ImmediateShift callback,
+  ImmediateShifter callback,
   int shifterOperand,
 ) {
   var encoding = new ImmediateShiftEncoding(shifterOperand);
@@ -289,10 +323,10 @@ ShifterOperand _createImmediateShifter(
       );
 }
 
-/// Returns a [ShifterOperand] that performs a [RegisterShift].
-ShifterOperand _createRegisterShifter(
+/// Returns a [LazyShifter] that performs a [RegisterShifter].
+LazyShifter _lazyRegisterShifter(
   Cpu cpu,
-  RegisterShift callback,
+  RegisterShifter callback,
   int shifterOperand,
 ) {
   var encoding = new RegisterShiftEncoding(shifterOperand);
