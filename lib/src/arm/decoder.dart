@@ -271,7 +271,7 @@ class ArmDecoder {
           rd: format.rd,
           // ???
           op1: format.rn,
-          shifter: AddressingMode1.decodeShifterOperand(iw),
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // ADC
       case 0x5:
@@ -343,7 +343,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          shifter: AddressingMode1.decodeShifterOperand(iw),
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // BIC
       case 0xE:
@@ -360,7 +360,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          shifter: AddressingMode1.decodeShifterOperand(iw),
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
     }
     final hexOp = format.opcode.toRadixString(16).toUpperCase();

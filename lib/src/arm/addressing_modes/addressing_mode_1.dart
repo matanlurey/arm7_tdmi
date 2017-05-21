@@ -1,5 +1,4 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
-import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
@@ -89,41 +88,39 @@ abstract class AddressingMode1 {
     ROR_IMM: RORImmediate,
   };
 
-  /// Decodes the [Shifter] for [instruction].
-  static Shifter decodeShifterOperand(int instruction) {
-    var format = new DataProcessingFormat(instruction);
-    if (format.i) {
-      var encoding = new _Immediate32ShifterEncoding(format.operand2);
+  /// Decodes the [Shifter] encoded by [shifterBits].
+  ///
+  /// [isImmediate32] denotes whether [shifterBits] is an immediate value to be
+  /// rotated.
+  static Shifter decodeShifter(int shifterBits, bool isImmediate32) {
+    if (isImmediate32) {
+      var encoding = new _Immediate32ShifterEncoding(shifterBits);
       return (Cpu cpu) => immediate(cpu,
           rotate: encoding.rotate, immediate: encoding.immediate);
     }
 
-    int shifterCode = bitRange(format.operand2, 6, 4);
+    int shifterCode = bitRange(shifterBits, 6, 4);
 
-    /// Returns true iff [instruction] uses [_ImmediateShifterEncoding].
-    bool isImmediate(int instruction) =>
-        bitRange(instruction, 27, 25) == 0 && isClear(instruction, 4);
+    /// Whether [shifterBits] is an [_ImmediateShifterEncoding].
+    bool isImmediate = isClear(shifterBits, 4);
 
-    /// Returns true iff [instruction] uses [_RegisterShifterEncoding].
-    bool isRegister(int instruction) =>
-        bitRange(instruction, 27, 25) == 0 &&
-        isClear(instruction, 7) &&
-        isSet(instruction, 4);
+    /// Whether [shifterBits] is an [_RegisterShifterEncoding].
+    bool isRegister = isClear(shifterBits, 7) && isSet(shifterBits, 4);
 
-    if (isImmediate(instruction)) {
+    if (isImmediate) {
       var shifter = _immediateShifters[shifterCode];
       if (shifter == null) {
-        throw new UnsupportedError('$instruction');
+        throw new UnsupportedError('$shifterBits');
       }
-      var encoding = new _ImmediateShifterEncoding(format.operand2);
+      var encoding = new _ImmediateShifterEncoding(shifterBits);
       return (Cpu cpu) => shifter(cpu, shift: encoding.shift, rm: encoding.rm);
     } else {
-      assert(isRegister(instruction));
+      assert(isRegister);
       var shifter = _registerShifters[shifterCode];
       if (shifter == null) {
-        throw new UnsupportedError('$instruction');
+        throw new UnsupportedError('$shifterBits');
       }
-      var encoding = new _RegisterShifterEncoding(format.operand2);
+      var encoding = new _RegisterShifterEncoding(shifterBits);
       return (Cpu cpu) => shifter(cpu, rs: encoding.rs, rm: encoding.rm);
     }
   }
