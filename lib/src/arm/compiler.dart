@@ -1,6 +1,7 @@
 library arm7_tdmi.src.arm.compiler;
 
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 
@@ -61,13 +62,13 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op2,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$MOV(
         condition: cond,
         s: s,
         rd: rd,
-        op2: op2,
+        shifter: shifter,
       );
 
   /// Creates a _MVN_ (move not) instruction:
@@ -80,13 +81,13 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op2,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$MVN(
         condition: cond,
         s: s,
         rd: rd,
-        op2: op2,
+        shifter: shifter,
       );
 
   /// Creates a _MRS_ (move CPSR or SPSR to register) instruction.
@@ -161,14 +162,14 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int op1,
-    @required int op2,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$ADD(
         condition: cond,
         s: s,
         rd: rd,
-        op1: op1,
-        op2: op2,
+        rn: op1,
+        shifter: shifter,
       );
 
   /// Creates a _ADC_ (add with carry) instruction.
