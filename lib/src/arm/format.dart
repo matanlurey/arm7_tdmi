@@ -39,7 +39,7 @@ class DataProcessingFormat extends ArmInstructionFormat {
   @literal
   const DataProcessingFormat(int instruction) : super._(instruction);
 
-  int get i => _bit(25);
+  bool get i => _set(25);
 
   int get opcode => _range(24, 21);
 

@@ -19,6 +19,10 @@ void main() {
     for (var i = 0; i < 3; i++) {
       cpu.step();
     }
+    expect(cpu.cpsr.n, isFalse);
+    expect(cpu.cpsr.z, isTrue);
+    expect(cpu.cpsr.c, isTrue);
+    expect(cpu.cpsr.v, isFalse);
     expect(
       cpu.gprs[1],
       0,
@@ -97,7 +101,7 @@ void main() {
     // vector (0x00000008).
     expect(cpu.pc, 0x00000008);
 
-    // CPU mode should be 'supervisor'.
+    // CPU mode should be supervisor.
     expect(cpu.mode, Mode.svc);
 
     // R14_svc - 4 should be address of the SWI instruction.
@@ -109,7 +113,7 @@ void main() {
     const abortInst = 0xE5901000;
     final rom = createRom([
       0xe51f0000, // ldr r0, [pc, #-0]
-      abortInst,  // ldr r1, [r0]
+      abortInst, // ldr r1, [r0]
       0x12345678, // embedded constant for ldr r0 instruction
     ]);
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);

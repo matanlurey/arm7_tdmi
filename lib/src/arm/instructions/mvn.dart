@@ -2,8 +2,8 @@ part of arm7_tdmi.src.arm.compiler;
 
 /// Implements the 'Move Negative' Instruction.
 class _ArmInstruction$MVN extends Instruction {
-  /// Second operand of the instruction.
-  final int op2;
+  /// Provides this instruction's second operand.
+  final Shifter shifter;
 
   /// Destination register.
   final int rd;
@@ -13,7 +13,7 @@ class _ArmInstruction$MVN extends Instruction {
 
   const _ArmInstruction$MVN({
     @required ArmCondition condition,
-    @required this.op2,
+    @required this.shifter,
     @required this.rd,
     @required this.s,
   })
@@ -24,11 +24,15 @@ class _ArmInstruction$MVN extends Instruction {
 
   @override
   int execute(Cpu cpu) {
+    var shifterValues = shifter(cpu);
+    final op2 = shifterValues.operand;
     final r = cpu.gprs[rd] = (~op2).toUnsigned(32);
+
     if (s) {
       cpu.cpsr
-        ..n = r > 0x7FFFFFFF
-        ..z = r == 0;
+        ..n = int32.isNegative(r)
+        ..z = isZero(r)
+        ..c = shifterValues.carryOut;
     }
     return 1;
   }
