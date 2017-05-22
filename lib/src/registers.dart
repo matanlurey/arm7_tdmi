@@ -58,7 +58,7 @@ class Registers {
 
   /// Offset values for a given operating [Mode].
   @visibleForTesting
-  static const offsets = const <Mode, int>{
+  static const offsets = const {
     Mode.fiq: 17,
     Mode.svc: 25,
     Mode.abt: 28,
@@ -196,6 +196,9 @@ class Registers {
 
   /// Returns a copy of the data backing the registers.
   Uint32List toFixedList() => new Uint32List.fromList(_buffer);
+
+  @override
+  String toString() => '$Registers {$_buffer}';
 }
 
 /// A representation of the seven ARM7/TDMI operating modes.
@@ -204,7 +207,7 @@ class Mode {
   ///
   /// INTERNAL ONLY: Not part of the supported public API.
   @visibleForTesting
-  static const modes = const {
+  static const modes = const <int, Mode>{
     0x10: usr,
     0x11: fiq,
     0x12: irq,

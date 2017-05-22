@@ -17,7 +17,10 @@ class _ArmInstruction$MVN extends Instruction {
     @required this.rd,
     @required this.s,
   })
-      : super._(condition: condition, name: 'MVN');
+      : super._(
+          condition: condition,
+          name: 'MVN',
+        );
 
   @override
   int execute(Cpu cpu) {

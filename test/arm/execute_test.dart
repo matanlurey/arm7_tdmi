@@ -23,16 +23,71 @@ void main() {
     expect(cpu.cpsr.z, isTrue);
     expect(cpu.cpsr.c, isTrue);
     expect(cpu.cpsr.v, isFalse);
+    expect(
+      cpu.gprs[1],
+      0,
+      reason: 'Should have stored #0 in r1',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.gprs[2],
+      1,
+      reason: 'Should have stored #1 in r2',
+    );
+    expect(
+      cpu.gprs[0],
+      1,
+      reason: 'Should have resulted in `1` in r0',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.n,
+      isFalse,
+      reason: ''
+          'N = 0; the result is 0, which is considered positive, and so '
+          'the N (negative) bit should be set to 0.',
+    );
+    expect(
+      cpu.cpsr.z,
+      isTrue,
+      reason: 'Z = 1; the result is 0, so the Z (zero) bit should be set to 1',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.c,
+      isTrue,
+      reason: ''
+          'C = 1; we lost some data because the result did not fit into 32 bits'
+          ', so the processor should indicate this by setting C (carry) to 1',
+      skip: 'TO BE FIXED',
+    );
+    expect(
+      cpu.cpsr.v,
+      isFalse,
+      reason: ''
+          'V = 0; from a two\'s complement signed-arithmetic viewpoint, '
+          '0xffffffff really means -1, so the operation we did was really (-1) '
+          '+ 1 = 0. That operation clearly does not overflow, so V (overflow) '
+          'should be set to 0',
+      skip: 'TO BE FIXED',
+    );
   });
 
   test('Undefined instruction trap should be triggered', () {
-    final rom = createRom([0xFF000000]);
+    final rom = createRom([0xFF000000 /* Undefined Instruction */]);
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
     cpu.step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step(); // Execute undefined instruction.
-    // expect(cpu.pc, 0x00000004);
-    // expect(cpu.mode, Mode.und);
+    expect(
+      cpu.pc,
+      0x00000004,
+      reason: ''
+          'Next read should fetch instruction from the undefined instruction '
+          'interrupt (0x00000004)',
+      skip: 'TO BE FIXED',
+    );
+    expect(cpu.mode, Mode.und, skip: 'TO BE FIXED');
   });
 
   test('Software interrupt should raise a SWI exception', () {
@@ -64,10 +119,10 @@ void main() {
     final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
     cpu.step(); // Reset branch.
     expect(cpu.pc, resetLabel);
-    /*
-    cpu.step();
 
+    /*
     // R0 should contain 0x12345678 now.
+    cpu.step();
     expect(cpu.gprs[0], 0x12345678);
 
     // Trying to read from memory address 0x12345678 should raise a data-abort.
