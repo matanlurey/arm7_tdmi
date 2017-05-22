@@ -233,19 +233,13 @@ class ArmDecoder {
   }
 
   /// Returns true iff [iw] is encoded as a software interrupt.
-  ///
-  /// Bit pattern: cond 1111 ignored by processor
   bool _isSoftwareInterrupt(int iw) => bitRange(iw, 27, 24) == 0xF;
 
   /// Returns true iff [iw] is encoded as a coprocessor register transfer.
-  ///
-  /// Bit pattern: cond{4} 1110 CPOpc{3} L CRn{4} Rd{4} CP#{4} CP{3} 1 CRm{4}
   bool _isCoprocessorRegisterTransfer(int iw) =>
       bitRange(iw, 27, 24) == 0xE && isSet(iw, 4);
 
   /// Returns true iff [iw] is encoded as a coprocessor data operation.
-  ///
-  /// Bit pattern: cond{4} 1110 CPOpc{4} CRn{4} Rd{4} CP#{4} CP{3} 0 CRm{4}
   // ignore: unused_element
   bool _isCoprocessorDataProcessing(int iw) =>
       bitRange(iw, 27, 24) == 0xE && isClear(iw, 4);
@@ -276,8 +270,6 @@ class ArmDecoder {
   /// Returns true iff [iw] is encoded as a branch instruction.
   ///
   /// This is also called a "Double register transfer".
-  ///
-  /// Bit pattern: cond{4} 101L Offset{24}
   bool _isBranch(int iw) => bitRange(iw, 27, 25) == 0x5;
 
   bool _isMiscellaneous(int iw) =>
@@ -289,8 +281,6 @@ class ArmDecoder {
   ///
   /// It's worth nothing that in general, an instruction with an unrecognized
   /// bit pattern can also be undefined, even if `_isUndefined(x) == false`.
-  ///
-  /// Bit pattern: cond{4} 001 ... 1{bit 4} ...
   bool _isUndefined(int iw) =>
       bitRange(iw, 27, 25) == 0x1 &&
       bitRange(iw, 24, 23) == 0x2 &&
@@ -304,8 +294,6 @@ class ArmDecoder {
       bitRange(iw, 27, 24) == 0x3 && isSet(iw, 4);
 
   /// Returns true iff [iw] is encoded as a single data transfer instruction.
-  ///
-  /// Bit pattern: cond{4} 011P UBWL Rn{4} Rd{4} Offset{12}
   // ignore: unused_element
   bool _isSingleDataTransfer(int iw) =>
       bitRange(iw, 27, 25) == 0x3 && isClear(iw, 4);
@@ -328,8 +316,6 @@ class ArmDecoder {
       [7, 4].every((int n) => isSet(iw, n));
 
   /// Returns true iff [iw] is encoded as a single data swap instruction.
-  ///
-  /// Bit pattern: cond 0001 0B00 Rn{4} Rd{4} 0000 1001 Rm{4}
   // ignore: unused_element
   bool _isSingleDataSwap(int iw) =>
       bitRange(iw, 27, 23) == 0x2 &&
