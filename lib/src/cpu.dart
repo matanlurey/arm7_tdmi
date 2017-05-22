@@ -94,7 +94,7 @@ class Cpu {
     @required int read16(int address),
     @required int read32(int address),
   }) =>
-      new Cpu._(
+      new Cpu.private(
         decoder,
         new Registers(),
         read16,
@@ -113,7 +113,8 @@ class Cpu {
         read32: read32,
       );
 
-  Cpu._(
+  @protected
+  Cpu.private(
     this._decoder,
     this._registers,
     this._read16,
@@ -183,6 +184,14 @@ class Cpu {
     gprs.pc = exception.code;
   }
 
+  /// Returns the next instruction based on the program counter.
+  @visibleForOverriding
+  Instruction fetch() => _decoder.decode(read32(gprs.pc));
+
+  /// Executes [instruction] against this CPU.
+  @visibleForOverriding
+  int execute(Instruction instruction) => instruction.execute(this);
+
   /// Single-steps the CPU, that is, fetches and executes a single instruction.
   ///
   /// Returns the number of clock cycles needed to execute the instruction.
@@ -197,7 +206,7 @@ class Cpu {
     while (cycles > 0) {
       // Fetch instruction word (iw).
       // FIXME: Handle prefetch aborts.
-      final i = _decoder.decode(read32(gprs.pc));
+      final i = fetch();
       if (i.condition.pass(cpsr)) {
         // The PC value used in an executing instruction is always two
         // instructions ahead of the actual instruction address because of
@@ -206,7 +215,7 @@ class Cpu {
 
         // Dispatch instruction.
         final before = gprs.pc;
-        final executed = i.execute(this);
+        final executed = execute(i);
         cycles -= executed;
 
         // Move on to next instruction, unless executed instruction was a branch

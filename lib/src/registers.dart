@@ -396,6 +396,12 @@ class Psr {
       : _read = read,
         _write = write;
 
+  @override
+  bool operator== (Object o) => o is Psr && o.value == value;
+
+  @override
+  int get hashCode => value;
+
   /// Current operating mode.
   Mode get mode {
     final m0m4 = uint32.range(_read(), modeEnd, modeStart);

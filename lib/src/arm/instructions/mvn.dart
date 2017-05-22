@@ -26,10 +26,23 @@ class _ArmInstruction$MVN extends Instruction {
   int execute(Cpu cpu) {
     final shifterValues = shifter(cpu);
     final op2 = shifterValues.operand;
-    final result = gprsWrite(cpu.gprs, rd, (~op2).toUnsigned(32));
+    final result = gprsWrite(cpu.gprs, rd, ~op2);
     if (s) {
       computePsrShifter(cpu, rd, result, shifterValues);
     }
     return 1;
+  }
+
+  @override
+  String toDebugString() {
+    final buffer = new StringBuffer('MVN');
+    if (condition != ArmCondition.AL) {
+      buffer.write('{$condition}');
+    }
+    if (s) {
+      buffer.write('{S}');
+    }
+    buffer.write(' Rd=$rd, Op2=<Shifter>');
+    return buffer.toString();
   }
 }

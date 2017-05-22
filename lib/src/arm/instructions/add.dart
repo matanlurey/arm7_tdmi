@@ -39,4 +39,17 @@ class _ArmInstruction$ADD extends Instruction {
     }
     return 1;
   }
+
+  @override
+  String toDebugString() {
+    final buffer = new StringBuffer('ADD');
+    if (condition != ArmCondition.AL) {
+      buffer.write('{$condition}');
+    }
+    if (s) {
+      buffer.write('{S}');
+    }
+    buffer.write(' Rd=$rd, Rn=$rn, Op2=<Shifter>');
+    return buffer.toString();
+  }
 }
