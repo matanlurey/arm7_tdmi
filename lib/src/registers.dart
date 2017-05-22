@@ -397,7 +397,7 @@ class Psr {
         _write = write;
 
   @override
-  bool operator== (Object o) => o is Psr && o.value == value;
+  bool operator ==(Object o) => o is Psr && o.value == value;
 
   @override
   int get hashCode => value;
