@@ -1,4 +1,5 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
 import 'package:binary/binary.dart';
 
 import 'format.dart';
@@ -270,7 +271,7 @@ class ArmDecoder {
           rd: format.rd,
           // ???
           op1: format.rn,
-          op2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // ADC
       case 0x5:
@@ -342,7 +343,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          op2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // BIC
       case 0xE:
@@ -359,7 +360,7 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          op2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
     }
     final hexOp = format.opcode.toRadixString(16).toUpperCase();

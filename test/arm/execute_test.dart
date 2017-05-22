@@ -20,9 +20,9 @@ void main() {
       cpu.step();
     }
     expect(cpu.cpsr.n, isFalse);
-    // expect(cpu.cpsr.z, isTrue);
-    // expect(cpu.cpsr.c, isTrue);
-    // expect(cpu.cpsr.v, isFalse);
+    expect(cpu.cpsr.z, isTrue);
+    expect(cpu.cpsr.c, isTrue);
+    expect(cpu.cpsr.v, isFalse);
   });
 
   test('Undefined instruction trap should be triggered', () {
@@ -46,7 +46,7 @@ void main() {
     // vector (0x00000008).
     expect(cpu.pc, 0x00000008);
 
-    // CPU mode should be 'supervisor'.
+    // CPU mode should be supervisor.
     expect(cpu.mode, Mode.svc);
 
     // R14_svc - 4 should be address of the SWI instruction.

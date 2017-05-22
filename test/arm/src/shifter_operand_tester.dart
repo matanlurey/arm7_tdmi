@@ -72,11 +72,11 @@ class ShifterOperandTester {
           final cpu = _cpu(op1, op2, carryFlag);
           final reason = _reason(op1, op2, carryFlag);
 
-          shifterRunner.run(cpu, op1, op2, reason);
+          var shiftValues = shifterRunner.run(cpu, op1, op2, reason);
 
-          expect(cpu.shifterOperand, expectedOperand(op1, op2, carryFlag),
+          expect(shiftValues.operand, expectedOperand(op1, op2, carryFlag),
               reason: reason);
-          expect(cpu.shifterCarryOut, expectedCarryOut(op1, op2, carryFlag),
+          expect(shiftValues.carryOut, expectedCarryOut(op1, op2, carryFlag),
               reason: reason);
         });
       });
@@ -103,20 +103,20 @@ abstract class _ShifterRunner {
   /// [Cpu] is the cpu to execute on. [op1] and [op2] are the first and second
   /// operands to the shifter, respectively.  Reason is a string describing this
   /// test run.
-  void run(Cpu cpu, int op1, int op2, String reason);
+  ShifterValues run(Cpu cpu, int op1, int op2, String reason);
 }
 
 class _Immediate32ShifterRunner implements _ShifterRunner {
-  final Immediate32Shifter shifter;
+  final Immediate32Shifter _shifter;
 
-  _Immediate32ShifterRunner(this.shifter);
+  _Immediate32ShifterRunner(this._shifter);
 
   @override
-  void run(Cpu cpu, int immediate, int rotate, String reason) {
+  ShifterValues run(Cpu cpu, int immediate, int rotate, String reason) {
     assert(uint4.inRange(rotate), reason);
     assert(uint8.inRange(immediate), reason);
 
-    shifter(cpu, rotate: rotate, immediate: immediate);
+    return _shifter(cpu, rotate: rotate, immediate: immediate);
   }
 }
 
@@ -127,11 +127,11 @@ class _ImmediateShifterRunner implements _ShifterRunner {
   _ImmediateShifterRunner(this._shifter, this._rm);
 
   @override
-  void run(Cpu cpu, int op1, int shift, String reason) {
+  ShifterValues run(Cpu cpu, int op1, int shift, String reason) {
     assert(uint32.inRange(op1), reason);
     assert(0 <= shift && shift <= math.pow(2, 6) - 1, reason);
 
-    _shifter(cpu, shift: shift, rm: _rm);
+    return _shifter(cpu, shift: shift, rm: _rm);
   }
 }
 
@@ -143,10 +143,10 @@ class _RegisterShifterRunner implements _ShifterRunner {
   _RegisterShifterRunner(this._shifter, this._rm, this._rs);
 
   @override
-  void run(Cpu cpu, int op1, int shift, String reason) {
+  ShifterValues run(Cpu cpu, int op1, int shift, String reason) {
     assert(uint32.inRange(op1), reason);
     assert(uint8.inRange(shift), reason);
 
-    _shifter(cpu, rs: _rs, rm: _rm);
+    return _shifter(cpu, rs: _rs, rm: _rm);
   }
 }
