@@ -2,6 +2,7 @@ library arm7_tdmi.src.arm.compiler;
 
 import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
+import 'package:arm7_tdmi/src/helpers.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
 

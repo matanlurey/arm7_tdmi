@@ -25,13 +25,9 @@ class _ArmInstruction$SUB extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    final r = cpu.gprs[rd] = (op1 - op2).toUnsigned(32);
+    final result = gprsWrite(cpu.gprs, rd, op1 - op2);
     if (s) {
-      cpu.cpsr
-        ..c = r > 0xFFFFFFFF
-        ..v = (~(op1 ^ op2) & (op1 ^ r)) > 0x7FFFFFFF
-        ..n = r > 0x7FFFFFFF
-        ..z = r == 0;
+      computePsr(cpu, rd, result, op1, op2);
     }
     return 1;
   }
