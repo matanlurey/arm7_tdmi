@@ -20,207 +20,59 @@ class ArmDecoder {
 
   /// Decodes and returns an executable instance from an ARM [iw].
   Instruction decode(int iw) {
+    // The strategy is to first check whether the bit pattern of iw matches the
+    // encoding of the instruction formats containing the fewest number of
+    // variable bits.
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
-    switch (iw >> 25 & 0x07) {
-      case 0:
-        if (iw >> 4 & 0x1FFFFF ^ 0x12FFF1 == 0) {
-          return _decodeBX(iw);
-        }
-        final b74 = iw >> 4 & 0xF;
-        if (b74 == 9) {
-          return iw >> 24 & 0x01 != 0
-              ? _decodeSWI(iw)
-              : iw >> 23 ^ 0x01 != 0
-                  ? _decodeMULL$MLAL(iw)
-                  : _decodeMUL$MLA(iw);
-        }
-        if (b74 == 0xB || b74 == 0xD || b74 == 0xF) {
-          return _decodeLDRH$STRH$LDRSB$LDRSH(iw);
-        }
-        if (iw >> 23 & 0x03 == 2 && iw >> 20 & 0x01 == 0) {
-          return (iw >> 21) & 0x01 != 0 ? _decodeMSR(iw) : _decodeMRS(iw);
-        }
-        return _decodeData(iw);
-      case 1:
-        if (iw >> 23 & 0x03 == 2 && iw >> 20 & 0x01 == 0) {
-          return iw >> 21 & 0x01 != 0 ? _decodeMSR(iw) : _decodeMRS(iw);
-        }
-        return _decodeData(iw);
-      case 2:
-        return _decodeLDR$STR(iw);
-      case 3:
-        return iw >> 4 & 0x01 != 0 ? _undefined(iw) : _decodeLDR$STR(iw);
-      case 4:
-        return _decodeLDM$STM(iw);
-      case 5:
-        return _decodeB$BL(iw);
-      case 6:
-        return _decodeLDC$STC(iw);
-      case 7:
-        if (iw >> 24 & 0x01 != 0) {
-          return _decodeSWI(iw);
-        }
-        return iw >> 4 & 0x01 != 0 ? _decodeMRC$MCR(iw) : _decodeCDP(iw);
-      default:
-        return _undefined(iw);
+
+    if (_isUndefined(iw)) {
+      return _undefined(iw);
+    } else if (_isSoftwareInterrupt(iw)) {
+      return _decodeSWI(iw);
+    } else if (_isMiscellaneous(iw)) {
+      return _decodeMiscellaneous(iw);
+    } else if (_isCoprocessorRegisterTransfer(iw)) {
+      return _decodeCoprocessorRegisterTransfer(iw);
+    } else if (_isDataProcessing(iw)) {
+      return _decodeData(iw);
+    } else if (_isBranch(iw)) {
+      return _decodeBranches(iw);
+    } else {
+      return _undefined(iw);
     }
   }
 
-  Instruction _decodeBX(int iw) {
-    final format = new BranchAndExchangeFormat(iw);
-    return _compiler.createBX(cond: format.cond, operand: format.rn);
+  /// See Figure A3-4 of the official ARM docs.
+  Instruction _decodeMiscellaneous(int iw) {
+    if (bitRange(iw, 27, 23) == 0x6 ||
+        (bitRange(iw, 27, 23) == 0x2 && bitRange(iw, 7, 4) == 0x0)) {
+      return _compiler.createMSR(cond: null, spsr: null, field: null, rm: null);
+    } else if (bitRange(iw, 27, 20) == 0x12) {
+      return _compiler.createBX(cond: null, operand: null);
+    }
+    return _undefined(iw);
+  }
+
+  Instruction _decodeCoprocessorRegisterTransfer(int iw) {
+    final format = new CoprocessorRegisterFormat(iw);
+
+    if (bitRange(iw, 27, 24) == 0xE && isClear(iw, 20) && isSet(iw, 4)) {
+      return _compiler.createMCR(
+        cond: format.cond,
+        cpnum: null,
+        op1: null,
+        rd: null,
+        crn: null,
+        crm: null,
+        op2: null,
+      );
+    }
+    return _undefined(iw);
   }
 
   Instruction _decodeSWI(int iw) {
     final format = new SoftwareInterruptFormat(iw);
     return _compiler.createSWI(cond: format.cond, routine: format.routine);
-  }
-
-  Instruction _decodeMULL$MLAL(int iw) {
-    final format = new MultiplyLongFormat(iw);
-    if (format.a) {
-      if (format.u) {
-        return _compiler.createUMLAL(
-          cond: format.cond,
-          s: format.s,
-          rdLo: format.rdLo,
-          rdHi: format.rdHi,
-          rm: format.rm,
-          rs: format.rs,
-        );
-      } else {
-        return _compiler.createSMLAL(
-          cond: format.cond,
-          s: format.s,
-          rdLo: format.rdLo,
-          rdHi: format.rdHi,
-          rm: format.rm,
-          rs: format.rs,
-        );
-      }
-    } else {
-      if (format.u) {
-        return _compiler.createUMULL(
-          cond: format.cond,
-          s: format.s,
-          rdLo: format.rdLo,
-          rdHi: format.rdHi,
-          rm: format.rm,
-          rs: format.rs,
-        );
-      } else {
-        return _compiler.createSMULL(
-          cond: format.cond,
-          s: format.s,
-          rdLo: format.rdLo,
-          rdHi: format.rdHi,
-          rm: format.rm,
-          rs: format.rs,
-        );
-      }
-    }
-  }
-
-  Instruction _decodeMUL$MLA(int iw) {
-    final format = new MultiplyFormat(iw);
-    if (format.a) {
-      return _compiler.createMLA(
-        cond: format.cond,
-        s: format.s,
-        rd: format.rd,
-        rm: format.rm,
-        rs: format.rs,
-        rn: format.rn,
-      );
-    } else {
-      return _compiler.createMUL(
-        cond: format.cond,
-        s: format.s,
-        rd: format.rd,
-        rs: format.rs,
-        rn: format.rn,
-      );
-    }
-  }
-
-  Instruction _decodeLDRH$STRH$LDRSB$LDRSH(int iw) {
-    final format = new HalfWordTransferRegisterFormat(iw);
-    if (format.l) {
-      // Load
-      if (format.h) {
-        // Halfword
-        return _compiler.createLDRHalfWord(
-          cond: format.cond,
-          signed: format.s,
-          rd: format.rd,
-          aMode: null,
-        );
-      } else {
-        // Byte
-        return _compiler.createLDRByte(
-          cond: format.cond,
-          signed: format.s,
-          rd: format.rd,
-          aMode: null,
-        );
-      }
-    } else {
-      // Store
-      if (format.s) {
-        if (format.h) {
-          // Signed Halfword
-          return _compiler.createSTRHalfWord(
-            cond: format.cond,
-            rd: format.rd,
-            aMode: null,
-          );
-        } else {
-          // Signed Byte
-          return _compiler.createSTRByte(
-            cond: format.cond,
-            rd: format.rd,
-            aMode: null,
-          );
-        }
-      } else {
-        if (format.h) {
-          // Unsigned Halfword
-          return _compiler.createSTRHalfWord(
-            cond: format.cond,
-            rd: format.rd,
-            aMode: null,
-          );
-        } else {
-          // SWP (???)
-          return _compiler.createSWPByte(
-            cond: format.cond,
-            rd: format.rd,
-            rm: format.rm,
-            rn: format.rn,
-          );
-        }
-      }
-    }
-  }
-
-  // Returns a 'Move to Status Register from ARM register' instruction.
-  Instruction _decodeMSR(int iw) {
-    // TODO: Complete.
-    return _compiler.createMSR(
-      spsr: null,
-      field: null,
-      rm: null,
-    );
-  }
-
-  // Returns a 'Move PSR to General-purpose Register' instruction.
-  Instruction _decodeMRS(int iw) {
-    // TODO: Move and use within a format.
-    return _compiler.createMRS(
-      cond: new ArmCondition.fromOpcode(uint32.range(iw, 31, 28)),
-      spsr: iw >> 22 & 0x1 != 0,
-      rd: iw >> 12 & 0xF,
-    );
   }
 
   Instruction _decodeData(int iw) {
@@ -369,69 +221,7 @@ class ArmDecoder {
 
   Instruction _undefined(_) => const _Undefined();
 
-  Instruction _decodeLDR$STR(int iw) {
-    final format = new SingleDataTransferFormat(iw);
-    if (format.l) {
-      if (format.b) {
-        return _compiler.createLDRByte(
-          cond: format.cond,
-          user: format.u,
-          rd: format.rd,
-          aMode: format.offset,
-        );
-      } else {
-        return _compiler.createLDRWord(
-          cond: format.cond,
-          user: format.u,
-          rd: format.rd,
-          aMode: format.offset,
-        );
-      }
-    } else {
-      if (format.b) {
-        return _compiler.createSTRByte(
-          cond: format.cond,
-          user: format.u,
-          rd: format.rd,
-          aMode: format.offset,
-        );
-      } else {
-        return _compiler.createSTRWord(
-          cond: format.cond,
-          user: format.u,
-          rd: format.rd,
-          aMode: format.offset,
-        );
-      }
-    }
-  }
-
-  Instruction _decodeLDM$STM(int iw) {
-    final format = new BlockDataTransferFormat(iw);
-    if (format.l) {
-      return _compiler.createLDM(
-        cond: format.cond,
-        before: format.p,
-        add: format.u,
-        psr: format.s,
-        writeBack: format.w,
-        rn: format.rn,
-        rd: format.rd,
-      );
-    } else {
-      return _compiler.createSTM(
-        cond: format.cond,
-        before: format.p,
-        add: format.u,
-        psr: format.s,
-        writeBack: format.w,
-        rn: format.rn,
-        rd: format.rd,
-      );
-    }
-  }
-
-  Instruction _decodeB$BL(int iw) {
+  Instruction _decodeBranches(int iw) {
     final format = new BranchFormat(iw);
     return format.l
         ? _compiler.createBL(
@@ -442,56 +232,130 @@ class ArmDecoder {
         : _compiler.createB(cond: format.cond, label: format.immediate);
   }
 
-  Instruction _decodeLDC$STC(int iw) {
-    final format = new CoprocessorTransferFormat(iw);
-    if (format.l) {
-      return _compiler.createLDC(
-        cond: format.cond,
-        cpnum: format.cpnum,
-        crd: format.crd,
-        offset: format.offset,
-      );
-    } else {
-      return _compiler.createSTC(
-        cond: format.cond,
-        cpnum: format.cpnum,
-        crd: format.crd,
-        offset: format.offset,
-      );
-    }
-  }
+  /// Returns true iff [iw] is encoded as a software interrupt.
+  ///
+  /// Bit pattern: cond 1111 ignored by processor
+  bool _isSoftwareInterrupt(int iw) => bitRange(iw, 27, 24) == 0xF;
 
-  Instruction _decodeMRC$MCR(int iw) {
-    final format = new CoprocessorRegisterFormat(iw);
-    if (format.l) {
-      // Load to register from coprocessor.
-      return _compiler.createMRC(
-        cond: format.cond,
-        cpnum: format.cphash,
-        op1: format.cpopc,
-        rd: format.rd,
-        crn: format.crn,
-        crm: format.crm,
-        op2: format.cp,
-      );
-    } else {
-      // Store to coprocessor from register.
-      return _compiler.createMCR(
-        cond: format.cond,
-        cpnum: format.cphash,
-        op1: format.cpopc,
-        rd: format.rd,
-        crn: format.crn,
-        crm: format.crm,
-        op2: format.cp,
-      );
-    }
-  }
+  /// Returns true iff [iw] is encoded as a coprocessor register transfer.
+  ///
+  /// Bit pattern: cond{4} 1110 CPOpc{3} L CRn{4} Rd{4} CP#{4} CP{3} 1 CRm{4}
+  bool _isCoprocessorRegisterTransfer(int iw) =>
+      bitRange(iw, 27, 24) == 0xE && isSet(iw, 4);
 
-  // Returns a 'Coprocessor Data Processing' instruction.
-  Instruction _decodeCDP(int iw) {
-    throw new UnimplementedError();
-  }
+  /// Returns true iff [iw] is encoded as a coprocessor data operation.
+  ///
+  /// Bit pattern: cond{4} 1110 CPOpc{4} CRn{4} Rd{4} CP#{4} CP{3} 0 CRm{4}
+  // ignore: unused_element
+  bool _isCoprocessorDataProcessing(int iw) =>
+      bitRange(iw, 27, 24) == 0xE && isClear(iw, 4);
+
+  /// Returns true iff [iw] is encoded as a coprocessor data transfer.
+  ///
+  /// This is also called a "Double register transfer".
+  ///
+  /// This is the only instruction with high bits 110
+  // FIXME: Add bit pattern
+  // ignore: unused_element
+  bool _isCoprocessorLoadStore(int iw) =>
+      bitRange(iw, 27, 25) == 0x6 && isSet(iw, 4);
+
+  // ignore: unused_element
+  bool _isLoadStoreMultiple(int iw) => bitRange(iw, 27, 24) == 0x4;
+
+  // ignore: unused_element
+  bool _isLoadStoreRegisterOffset(int iw) =>
+      bitRange(iw, 27, 24) == 0x3 && isClear(iw, 4);
+
+  // ignore: unused_element
+  bool _isLoadStoreImmediateOffset(int iw) => bitRange(iw, 27, 24) == 0x2;
+
+  bool _isMoveImmediateToStatusRegister(int iw) =>
+      bitRange(iw, 27, 23) == 0x5 && bitRange(iw, 21, 20) == 0x2;
+
+  /// Returns true iff [iw] is encoded as a branch instruction.
+  ///
+  /// This is also called a "Double register transfer".
+  ///
+  /// Bit pattern: cond{4} 101L Offset{24}
+  bool _isBranch(int iw) => bitRange(iw, 27, 25) == 0x5;
+
+  bool _isMiscellaneous(int iw) =>
+      bitRange(iw, 27, 23) == 0x2 &&
+      isClear(iw, 20) &&
+      (isClear(iw, 4) || (isClear(iw, 7) && isSet(iw, 4)));
+
+  /// Returns true iff [iw] is encoded as an undefined instruction.
+  ///
+  /// It's worth nothing that in general, an instruction with an unrecognized
+  /// bit pattern can also be undefined, even if `_isUndefined(x) == false`.
+  ///
+  /// Bit pattern: cond{4} 001 ... 1{bit 4} ...
+  bool _isUndefined(int iw) =>
+      bitRange(iw, 27, 25) == 0x1 &&
+      bitRange(iw, 24, 23) == 0x2 &&
+      bitRange(iw, 21, 20) == 0;
+
+  // ignore: unused_element
+  bool _isArchUndefined(int iw) => bitRange(iw, 27, 20) == 0xEF;
+
+  // ignore: unused_element
+  bool _isMediaInstruction(int iw) =>
+      bitRange(iw, 27, 24) == 0x3 && isSet(iw, 4);
+
+  /// Returns true iff [iw] is encoded as a single data transfer instruction.
+  ///
+  /// Bit pattern: cond{4} 011P UBWL Rn{4} Rd{4} Offset{12}
+  // ignore: unused_element
+  bool _isSingleDataTransfer(int iw) =>
+      bitRange(iw, 27, 25) == 0x3 && isClear(iw, 4);
+
+  /// Returns true iff [iw] is encoded as a halfword data transfer instruction.
+  ///
+  /// This is also known as an immediate offset instruction.
+  // FIXME: Add bit pattern
+  // ignore: unused_element
+  bool _isHalfwordDataTransferImmediateOffset(int iw) =>
+      bitRange(iw, 27, 25) == 0 && [22, 7, 4].every((int n) => isSet(iw, n));
+
+  /// Returns true iff [iw] is encoded as a halfword data transfer instruction.
+  // FIXME: Add bit pattern
+  // ignore: unused_element
+  bool _isHalfwordDataTransferRegisterOffset(int iw) =>
+      bitRange(iw, 27, 25) == 0 &&
+      isClear(iw, 22) &&
+      bitRange(iw, 11, 8) == 0 &&
+      [7, 4].every((int n) => isSet(iw, n));
+
+  /// Returns true iff [iw] is encoded as a single data swap instruction.
+  ///
+  /// Bit pattern: cond 0001 0B00 Rn{4} Rd{4} 0000 1001 Rm{4}
+  // ignore: unused_element
+  bool _isSingleDataSwap(int iw) =>
+      bitRange(iw, 27, 23) == 0x2 &&
+      bitRange(iw, 21, 20) == 0 &&
+      bitRange(iw, 11, 4) == 0x9;
+
+  /// Returns true iff [iw] is encoded as a multiply instruction.
+  ///
+  /// Extra loads/stores instructions match this filter.
+  // FIXME: Add bit pattern
+  // ignore: unused_element
+  bool _isMultiply(int iw) =>
+      bitRange(iw, 27, 25) == 0 && isSet(iw, 7) && isSet(iw, 4);
+
+  /// Returns true iff [iw] is encoded as a data processing instruction.
+  ///
+  /// This includes register and immediate shifts.
+  // FIXME: Add bit pattern
+  bool _isDataProcessing(int iw) =>
+      (bitRange(iw, 27, 25) == 0 && isClear(iw, 4)) ||
+      (bitRange(iw, 27, 25) == 0 && isClear(iw, 7) && isSet(iw, 4)) ||
+      (bitRange(iw, 27, 25) == 0x1 &&
+          !_isUndefined(iw) &&
+          !_isMoveImmediateToStatusRegister(iw));
+
+  // FIXME: Decode miscellaneous instructions.
 }
 
 class _Undefined implements Instruction {
