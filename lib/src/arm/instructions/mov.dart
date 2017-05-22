@@ -21,15 +21,11 @@ class _ArmInstruction$MOV extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    var shiftValues = shifter(cpu);
+    final shiftValues = shifter(cpu);
     final op2 = shiftValues.operand;
-    final r = cpu.gprs[rd] = op2.toUnsigned(32);
-
+    final result = gprsWrite(cpu.gprs, rd, op2);
     if (s) {
-      cpu.cpsr
-        ..n = int32.isNegative(r)
-        ..z = isZero(r)
-        ..c = shiftValues.carryOut;
+      computePsrShifter(cpu, rd, result, shiftValues);
     }
     return 1;
   }

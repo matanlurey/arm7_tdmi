@@ -25,19 +25,17 @@ class _ArmInstruction$ADD extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    var shiftValues = shifter(cpu);
-
+    final shiftValues = shifter(cpu);
     final op1 = cpu.gprs[rn];
     final op2 = shiftValues.operand;
-    final r = op1.toUnsigned(32) + op2.toUnsigned(32);
-    cpu.gprs[rd] = r.toUnsigned(32);
-
+    final opResult = op1.toUnsigned(32) + op2.toUnsigned(32);
+    final storedResult = gprsWrite(
+      cpu.gprs,
+      rd,
+      opResult,
+    );
     if (s) {
-      cpu.cpsr
-        ..n = uint32.isNegative(r)
-        ..z = isZero(cpu.gprs[rd])
-        ..c = uint32.hasCarryBit(r)
-        ..v = uint32.doesAddOverflow(rn, op2, r);
+      computePsr(cpu, rd, opResult, storedResult, op1, op2);
     }
     return 1;
   }

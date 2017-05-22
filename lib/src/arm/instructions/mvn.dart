@@ -24,15 +24,11 @@ class _ArmInstruction$MVN extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    var shifterValues = shifter(cpu);
+    final shifterValues = shifter(cpu);
     final op2 = shifterValues.operand;
-    final r = cpu.gprs[rd] = (~op2).toUnsigned(32);
-
+    final result = gprsWrite(cpu.gprs, rd, (~op2).toUnsigned(32));
     if (s) {
-      cpu.cpsr
-        ..n = int32.isNegative(r)
-        ..z = isZero(r)
-        ..c = shifterValues.carryOut;
+      computePsrShifter(cpu, rd, result, shifterValues);
     }
     return 1;
   }
