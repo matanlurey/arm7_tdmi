@@ -13,13 +13,20 @@ int gprsWrite(Registers gprs, int register, int value) {
 }
 
 /// A helper function that computes the PSR in [cpu] based on inputs.
-void computePsr(Cpu cpu, int register, int value, [int op1, int op2]) {
+void computePsr(
+  Cpu cpu,
+  int register,
+  int opOnlyValue,
+  int value, [
+  int op1,
+  int op2,
+]) {
   cpu.cpsr
-    ..n = uint32.isNegative(value)
+    ..n = int32.isNegative(value)
     ..z = isZero(value)
-    ..c = uint32.hasCarryBit(value);
+    ..c = uint32.hasCarryBit(opOnlyValue);
   if (op1 != null) {
-    cpu.cpsr.v = uint32.doesAddOverflow(op1, op2, value);
+    cpu.cpsr.v = int32.doesAddOverflow(op1, op2, value);
   }
 }
 
@@ -30,7 +37,7 @@ void computePsrShifter(
   ShifterValues shifter,
 ) {
   cpu.cpsr
-    ..n = uint32.isNegative(value)
+    ..n = int32.isNegative(value)
     ..z = isZero(value)
     ..c = shifter.carryOut;
 }

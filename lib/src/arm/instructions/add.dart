@@ -28,13 +28,14 @@ class _ArmInstruction$ADD extends Instruction {
     final shiftValues = shifter(cpu);
     final op1 = cpu.gprs[rn];
     final op2 = shiftValues.operand;
-    final result = gprsWrite(
+    final opResult = op1.toUnsigned(32) + op2.toUnsigned(32);
+    final storedResult = gprsWrite(
       cpu.gprs,
       rd,
-      op1.toUnsigned(32) + op2.toUnsigned(32),
+      opResult,
     );
     if (s) {
-      computePsr(cpu, rd, result, op1, op2);
+      computePsr(cpu, rd, opResult, storedResult, op1, op2);
     }
     return 1;
   }
