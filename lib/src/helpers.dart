@@ -30,6 +30,7 @@ void computePsr(
   }
 }
 
+/// A helper function that computes the PSR in [cpu] based on inputs.
 void computePsrShifter(
   Cpu cpu,
   int register,

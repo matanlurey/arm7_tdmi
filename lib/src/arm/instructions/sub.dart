@@ -25,9 +25,10 @@ class _ArmInstruction$SUB extends Instruction {
 
   @override
   int execute(Cpu cpu) {
-    final result = gprsWrite(cpu.gprs, rd, op1 - op2);
+    final opResult = op1 - op2;
+    final result = gprsWrite(cpu.gprs, rd, opResult);
     if (s) {
-      computePsr(cpu, rd, result, op1, op2);
+      computePsr(cpu, rd, opResult, result, op1, op2);
     }
     return 1;
   }

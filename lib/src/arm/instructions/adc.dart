@@ -25,13 +25,15 @@ class _ArmInstruction$ADC extends Instruction {
 
   @override
   int execute(Cpu cpu) {
+    final opResult =
+        (op1.toUnsigned(32) + op2.toSigned(32) + (cpu.cpsr.c ? 1 : 0));
     final result = gprsWrite(
       cpu.gprs,
       rd,
-      (op1.toUnsigned(32) + op2.toSigned(32) + (cpu.cpsr.c ? 1 : 0)),
+      opResult,
     );
     if (s) {
-      computePsr(cpu, rd, result, op1, op2);
+      computePsr(cpu, rd, opResult, result, op1, op2);
     }
     return 1; // FIXME
   }
