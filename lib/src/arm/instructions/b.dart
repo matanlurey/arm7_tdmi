@@ -15,4 +15,14 @@ class _ArmInstruction$B extends Instruction {
     cpu.gprs.pc += signExtend(immediate, 24, 30) << 2;
     return 3;
   }
+
+  @override
+  String toDebugString() {
+    final buffer = new StringBuffer('B');
+    if (condition != ArmCondition.AL) {
+      buffer.write('{$condition}');
+    }
+    buffer.write(' 0x${immediate.toRadixString(16)}');
+    return buffer.toString();
+  }
 }

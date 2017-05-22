@@ -820,4 +820,7 @@ abstract class Instruction {
   ///
   /// Returns how many cycles the instruction takes to execute.
   int execute(Cpu cpu);
+
+  /// Returns a long string suitable for debugging.
+  String toDebugString() => toString();
 }

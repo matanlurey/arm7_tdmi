@@ -508,4 +508,7 @@ class _Undefined implements Instruction {
 
   @override
   String get name => 'UNDEFINED';
+
+  @override
+  String toDebugString() => 'UNDEFINED';
 }

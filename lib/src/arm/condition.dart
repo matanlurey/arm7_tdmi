@@ -121,4 +121,7 @@ abstract class ArmCondition {
 
   /// Returns whether the current state of the [flags] pass this condition.
   bool pass(Psr flags);
+
+  @override
+  String toString() => suffix;
 }
