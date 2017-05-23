@@ -1,5 +1,5 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
-import 'package:binary/binary.dart';
+import 'package:arm7_tdmi/src/arm/decoder.dart';
 import 'package:test/test.dart';
 import 'package:tuple/tuple.dart';
 
@@ -133,21 +133,43 @@ void main() {
       0xee013f10,
       'MCR',
     ),
+
+    /** Loads and stores **/
+    // ldr  r1, [r0]
+    const Tuple2<int, String>(
+      0xe5901000,
+      'LDR',
+    ),
+    // ldr  r2, [pc, #56]
+    const Tuple2<int, String>(
+      0xe59f2038,
+      'LDR',
+    ),
+    // ldr  ip, [pc, #44]
+    const Tuple2<int, String>(
+      0xe59fc02c,
+      'LDR',
+    ),
+    // ldr  r2, [r0, #12]
+    const Tuple2<int, String>(
+      0xe590200c,
+      'LDR',
+    ),
+    // ldrb r3, [r1], #1
+    const Tuple2<int, String>(
+      0xe4d13001,
+      'LDR',
+    ),
   ].forEach((tuple) {
     final bits = tuple.item1;
     final name = tuple.item2;
-    test('0x${bits.toRadixString(16).toUpperCase()} should be $name', () {
+    final hexBits = bits.toRadixString(16).toUpperCase();
+    test('0x$hexBits should be $name', () {
       expect(
         decoder.decode(bits).name,
         name,
+        reason: hexBits,
       );
     });
   });
-
-  const b = 0xe12fff1e;
-  print(bitRange(b, 27, 25) == 0x0 && isClear(b, 7));
-  print(bitRange(b, 27, 20) == 0x12);
-
-  const iw = 0xee070f9a;
-  bitRange(iw, 27, 24) == 0xE && isClear(iw, 20) && isSet(iw, 4);
 }

@@ -14,6 +14,7 @@ dependencies:
   binary: '^0.1.3'
   func: '^0.1.1'
   quiver: '^0.24.0'
+  bit_pattern: '^0.0.2-alpha'
 
 dev_dependencies:
   presubmit: '0.0.2'

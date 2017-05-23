@@ -1,15 +1,13 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
-import 'package:binary/binary.dart';
+import 'package:binary/binary.dart' hide bit;
+import 'package:bit_pattern/bit_pattern.dart';
 
 import 'format.dart';
 import 'compiler.dart';
 
 /// Decodes encoded 32-bit ARMv4t into executable [Instruction] instances.
 class ArmDecoder {
-  // None of the instructions are yet implemented.
-  //
-  // ignore: unused_field
   final ArmCompiler _compiler;
 
   /// Create a new ARM decoder.
@@ -20,30 +18,62 @@ class ArmDecoder {
 
   /// Decodes and returns an executable instance from an ARM [iw].
   Instruction decode(int iw) {
-    // The strategy is to first check whether the bit pattern of iw matches the
-    // encoding of the instruction formats containing the fewest number of
-    // variable bits.
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
 
-    if (_isUndefined(iw)) {
+    var encoding = _Encodings.matcher.match(iw);
+    if (encoding == _Encodings.undefined) {
       return _undefined(iw);
-    } else if (_isSoftwareInterrupt(iw)) {
+    } else if (encoding == _Encodings.swi) {
       return _decodeSWI(iw);
-    } else if (_isMiscellaneous(iw)) {
+    } else if (encoding == _Encodings.misc) {
       return _decodeMiscellaneous(iw);
-    } else if (_isCoprocessorRegisterTransfer(iw)) {
+    } else if (encoding == _Encodings.coprocessorDataRegister) {
       return _decodeCoprocessorRegisterTransfer(iw);
-    } else if (_isDataProcessing(iw)) {
+    } else if (encoding == _Encodings.dataProcessing) {
       return _decodeData(iw);
-    } else if (_isBranch(iw)) {
+    } else if (encoding == _Encodings.branches) {
       return _decodeBranches(iw);
+    } else if (encoding == _Encodings.multiplies) {
+      return _undefined(iw);
+    } else if (encoding == _Encodings.moveImmediate) {
+      return _undefined(iw);
+    } else if (encoding == _Encodings.loadsAndStores) {
+      return _decodeLoadStore(iw);
     } else {
       return _undefined(iw);
     }
   }
 
+  Instruction _decodeLoadStore(int iw) {
+    /*
+      FIXME:
+      - LDRH Load halfword
+      - LDRSB Load signed byte
+      - LDRSH Load signed halfword
+      - LDM Load multiple
+      - STRB Store byte
+      - STRH Store halfword
+      - STM Store multiple
+     */
+    var format = new LoadAndStoreFormat(iw);
+    if (format.b) {
+      if (format.l) {
+        return _compiler.createLDRByte(user: null, rd: null, aMode: null);
+      } else {
+        return _compiler.createSTRByte(user: null, rd: null, aMode: null);
+      }
+    } else {
+      if (format.l) {
+        return _compiler.createLDRWord(user: null, rd: null, aMode: null);
+      } else {
+        return _compiler.createSTRWord(user: null, rd: null, aMode: null);
+      }
+    }
+  }
+
   /// See Figure A3-4 of the official ARM docs.
   Instruction _decodeMiscellaneous(int iw) {
+    // FIXME: Create and use format here.
     if (bitRange(iw, 27, 23) == 0x6 ||
         (bitRange(iw, 27, 23) == 0x2 && bitRange(iw, 7, 4) == 0x0)) {
       return _compiler.createMSR(cond: null, spsr: null, field: null, rm: null);
@@ -56,7 +86,7 @@ class ArmDecoder {
   Instruction _decodeCoprocessorRegisterTransfer(int iw) {
     final format = new CoprocessorRegisterFormat(iw);
 
-    if (bitRange(iw, 27, 24) == 0xE && isClear(iw, 20) && isSet(iw, 4)) {
+    if (!format.l && isSet(iw, 4)) {
       return _compiler.createMCR(
         cond: format.cond,
         cpnum: null,
@@ -231,117 +261,153 @@ class ArmDecoder {
           )
         : _compiler.createB(cond: format.cond, label: format.immediate);
   }
+}
 
-  /// Returns true iff [iw] is encoded as a software interrupt.
-  bool _isSoftwareInterrupt(int iw) => bitRange(iw, 27, 24) == 0xF;
+abstract class _Encodings {
+  /// Data processing instruction.
+  static final dataProcessing = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    bit('I'), // 25
+    nibble('opcode'), // 24 - 21
+    bit('S'), // 20
+    nibble('Rn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    bits(5, 'shift_amount'), // 11 - 7
+    bits(2, 'shift'), // 6 - 5
+    bit('_'), // 4
+    nibble('Rm') // 3 - 0
+  ]);
 
-  /// Returns true iff [iw] is encoded as a coprocessor register transfer.
-  bool _isCoprocessorRegisterTransfer(int iw) =>
-      bitRange(iw, 27, 24) == 0xE && isSet(iw, 4);
+  /// Undefined instruction.
+  static final undefined = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    1, // 25
+    1, // 24
+    0, // 23
+    bit('x'), // 22
+    0, // 21
+    0, // 20
+    bits(20, 'unused') // 19 - 0
+  ]);
 
-  /// Returns true iff [iw] is encoded as a coprocessor data operation.
-  // ignore: unused_element
-  bool _isCoprocessorDataProcessing(int iw) =>
-      bitRange(iw, 27, 24) == 0xE && isClear(iw, 4);
+  /// Software interrupt.
+  static final swi = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    1, // 24
+    bits(24, 'swi_number') // 23 - 0
+  ]);
 
-  /// Returns true iff [iw] is encoded as a coprocessor data transfer.
-  ///
-  /// This is also called a "Double register transfer".
-  ///
-  /// This is the only instruction with high bits 110
-  // FIXME: Add bit pattern
-  // ignore: unused_element
-  bool _isCoprocessorLoadStore(int iw) =>
-      bitRange(iw, 27, 25) == 0x6 && isSet(iw, 4);
+  /// Miscellaneous.
+  static final misc = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    0, // 25
+    1, // 24
+    0, // 23
+    bits(2, 'x'), // 22 - 21
+    0, // 20
+    bits(12, 'x'), // 19 - 8
+    bit('bit7'), // 7
+    bits(2, 'x'), // 6 - 5
+    bit('bit4'), // 4
+    nibble('x') // 3 - 0
+  ]);
 
-  // ignore: unused_element
-  bool _isLoadStoreMultiple(int iw) => bitRange(iw, 27, 24) == 0x4;
+  /// Coprocessor data processing and coprocessor register transfers.
+  static final coprocessorDataRegister = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    0, // 24
+    bits(3, 'opcode1'), // 23 - 21
+    bit('L'), // 20
+    nibble('CRn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    nibble('cp_num'), // 11 - 8
+    bits(3, 'opcode2'), // 7 - 5
+    bit('_'), // 4
+    nibble('CRm') // 3 - 0
+  ]);
 
-  // ignore: unused_element
-  bool _isLoadStoreRegisterOffset(int iw) =>
-      bitRange(iw, 27, 24) == 0x3 && isClear(iw, 4);
+  /// Branch and branch with link.
+  static final branches = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    0, // 26
+    1, // 25
+    bit('L'), // 24
+    bits(24, '24_bit_offset') // 23 - 0
+  ]);
 
-  // ignore: unused_element
-  bool _isLoadStoreImmediateOffset(int iw) => bitRange(iw, 27, 24) == 0x2;
+  /// Multiplies and extra loads/stores
+  static final multiplies = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    0, // 25
+    bits(17, 'x'), // 24 - 18
+    1, // 7
+    bits(2, 'x'), // 6 - 5
+    1, // 4
+    nibble('x') // 3 - 0
+  ]);
 
-  bool _isMoveImmediateToStatusRegister(int iw) =>
-      bitRange(iw, 27, 23) == 0x5 && bitRange(iw, 21, 20) == 0x2;
+  /// Move immediate to status register.
+  static final moveImmediate = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    1, // 25
+    1, // 24
+    0, // 23
+    bit('R'), // 22
+    1, // 21
+    0, // 20
+    nibble('mask'), // 19 - 16
+    nibble('SBO'), // 15 - 12
+    nibble('rotate'), // 11 - 8
+    byte('immediate') // 7 - 0
+  ]);
 
-  /// Returns true iff [iw] is encoded as a branch instruction.
-  ///
-  /// This is also called a "Double register transfer".
-  bool _isBranch(int iw) => bitRange(iw, 27, 25) == 0x5;
+  /// Loads and stores.
+  static final loadsAndStores = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    1, // 26
+    bit('I'), // 25
+    bit('P'), // 24
+    bit('U'), // 23
+    bit('B'), // 22
+    bit('W'), // 21
+    bit('L'), // 20
+    nibble('Rn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    bits(5, 'shift_amount'), // 11 - 7
+    bits(2, 'shift'), // 6 - 5
+    bit('_'), // 4
+    nibble('Rm'), // 3 - 0s
+  ]);
 
-  bool _isMiscellaneous(int iw) =>
-      bitRange(iw, 27, 23) == 0x2 &&
-      isClear(iw, 20) &&
-      (isClear(iw, 4) || (isClear(iw, 7) && isSet(iw, 4)));
-
-  /// Returns true iff [iw] is encoded as an undefined instruction.
-  ///
-  /// It's worth nothing that in general, an instruction with an unrecognized
-  /// bit pattern can also be undefined, even if `_isUndefined(x) == false`.
-  bool _isUndefined(int iw) =>
-      bitRange(iw, 27, 25) == 0x1 &&
-      bitRange(iw, 24, 23) == 0x2 &&
-      bitRange(iw, 21, 20) == 0;
-
-  // ignore: unused_element
-  bool _isArchUndefined(int iw) => bitRange(iw, 27, 20) == 0xEF;
-
-  // ignore: unused_element
-  bool _isMediaInstruction(int iw) =>
-      bitRange(iw, 27, 24) == 0x3 && isSet(iw, 4);
-
-  /// Returns true iff [iw] is encoded as a single data transfer instruction.
-  // ignore: unused_element
-  bool _isSingleDataTransfer(int iw) =>
-      bitRange(iw, 27, 25) == 0x3 && isClear(iw, 4);
-
-  /// Returns true iff [iw] is encoded as a halfword data transfer instruction.
-  ///
-  /// This is also known as an immediate offset instruction.
-  // FIXME: Add bit pattern
-  // ignore: unused_element
-  bool _isHalfwordDataTransferImmediateOffset(int iw) =>
-      bitRange(iw, 27, 25) == 0 && [22, 7, 4].every((int n) => isSet(iw, n));
-
-  /// Returns true iff [iw] is encoded as a halfword data transfer instruction.
-  // FIXME: Add bit pattern
-  // ignore: unused_element
-  bool _isHalfwordDataTransferRegisterOffset(int iw) =>
-      bitRange(iw, 27, 25) == 0 &&
-      isClear(iw, 22) &&
-      bitRange(iw, 11, 8) == 0 &&
-      [7, 4].every((int n) => isSet(iw, n));
-
-  /// Returns true iff [iw] is encoded as a single data swap instruction.
-  // ignore: unused_element
-  bool _isSingleDataSwap(int iw) =>
-      bitRange(iw, 27, 23) == 0x2 &&
-      bitRange(iw, 21, 20) == 0 &&
-      bitRange(iw, 11, 4) == 0x9;
-
-  /// Returns true iff [iw] is encoded as a multiply instruction.
-  ///
-  /// Extra loads/stores instructions match this filter.
-  // FIXME: Add bit pattern
-  // ignore: unused_element
-  bool _isMultiply(int iw) =>
-      bitRange(iw, 27, 25) == 0 && isSet(iw, 7) && isSet(iw, 4);
-
-  /// Returns true iff [iw] is encoded as a data processing instruction.
-  ///
-  /// This includes register and immediate shifts.
-  // FIXME: Add bit pattern
-  bool _isDataProcessing(int iw) =>
-      (bitRange(iw, 27, 25) == 0 && isClear(iw, 4)) ||
-      (bitRange(iw, 27, 25) == 0 && isClear(iw, 7) && isSet(iw, 4)) ||
-      (bitRange(iw, 27, 25) == 0x1 &&
-          !_isUndefined(iw) &&
-          !_isMoveImmediateToStatusRegister(iw));
-
-  // FIXME: Decode miscellaneous instructions.
+  static final matcher = new BitPatternGroup([
+    dataProcessing,
+    undefined,
+    swi,
+    misc,
+    coprocessorDataRegister,
+    branches,
+    multiplies,
+    moveImmediate,
+    loadsAndStores,
+  ]);
 }
 
 class _Undefined implements Instruction {
