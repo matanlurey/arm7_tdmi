@@ -28,11 +28,11 @@ class ArmDecoder {
       return _decodeSWI(iw);
     } else if (encoding == _Encodings.misc) {
       return _decodeMiscellaneous(iw);
-    } else if (encoding == _Encodings.coprocessorRegisterTransfer) {
+    } else if (encoding == _Encodings.coprocessorDataRegister) {
       return _decodeCoprocessorRegisterTransfer(iw);
     } else if (encoding == _Encodings.dataProcessing) {
       return _decodeData(iw);
-    } else if (encoding == _Encodings.branch) {
+    } else if (encoding == _Encodings.branches) {
       return _decodeBranches(iw);
     } else if (encoding == _Encodings.multiplies) {
       return _undefined(iw);
@@ -322,8 +322,8 @@ abstract class _Encodings {
     nibble('x') // 3 - 0
   ]);
 
-  /// Coprocessor register transfer.
-  static final coprocessorRegisterTransfer = new BitPattern([
+  /// Coprocessor data processing and coprocessor register transfers.
+  static final coprocessorDataRegister = new BitPattern([
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -335,12 +335,12 @@ abstract class _Encodings {
     nibble('Rd'), // 15 - 12
     nibble('cp_num'), // 11 - 8
     bits(3, 'opcode2'), // 7 - 5
-    1, // 4
+    bit('_'), // 4
     nibble('CRm') // 3 - 0
   ]);
 
   /// Branch and branch with link.
-  static final branch = new BitPattern([
+  static final branches = new BitPattern([
     nibble('cond'), // 31 - 28
     1, // 27
     0, // 26
@@ -362,7 +362,7 @@ abstract class _Encodings {
     nibble('x') // 3 - 0
   ]);
 
-  /// Move immediate to status register
+  /// Move immediate to status register.
   static final moveImmediate = new BitPattern([
     nibble('cond'), // 31 - 28
     0, // 27
@@ -379,6 +379,7 @@ abstract class _Encodings {
     byte('immediate') // 7 - 0
   ]);
 
+  /// Loads and stores.
   static final loadsAndStores = new BitPattern([
     nibble('cond'), // 31 - 28
     0, // 27
@@ -402,8 +403,8 @@ abstract class _Encodings {
     undefined,
     swi,
     misc,
-    coprocessorRegisterTransfer,
-    branch,
+    coprocessorDataRegister,
+    branches,
     multiplies,
     moveImmediate,
     loadsAndStores,
