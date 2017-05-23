@@ -172,20 +172,4 @@ void main() {
       );
     });
   });
-
-  group('$Encodings', () {
-    [
-      Encodings.dataProcessing,
-      Encodings.undefined,
-      Encodings.swi,
-      Encodings.misc,
-      Encodings.coprocessorRegisterTransfer,
-      Encodings.branch,
-      Encodings.multiplies,
-    ].forEach((encoding) {
-      test('should all be 32-bits', () {
-        expect(encoding.length, 32);
-      });
-    });
-  });
 }

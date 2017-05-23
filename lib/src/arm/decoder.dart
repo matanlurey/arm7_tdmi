@@ -7,153 +7,6 @@ import 'format.dart';
 import 'compiler.dart';
 import 'package:meta/meta.dart';
 
-@visibleForTesting
-abstract class Encodings {
-  /// Data processing instruction.
-  static final dataProcessing = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    0, // 26
-    bit('I'), // 25
-    nibble('opcode'), // 24 - 21
-    bit('S'), // 20
-    nibble('Rn'), // 19 - 16
-    nibble('Rd'), // 15 - 12
-    bits(5, 'shift_amount'), // 11 - 7
-    bits(2, 'shift'), // 6 - 5
-    bit('_'), // 4
-    nibble('Rm') // 3 - 0
-  ]);
-
-  /// Undefined instruction.
-  static final undefined = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    0, // 26
-    1, // 25
-    1, // 24
-    0, // 23
-    bit('x'), // 22
-    0, // 21
-    0, // 20
-    bits(20, 'unused') // 19 - 0
-  ]);
-
-  /// Software interrupt.
-  static final swi = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    1, // 26
-    1, // 25
-    1, // 24
-    bits(24, 'swi_number') // 23 - 0
-  ]);
-
-  /// Miscellaneous.
-  static final misc = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    0, // 26
-    0, // 25
-    1, // 24
-    0, // 23
-    bits(2, 'x'), // 22 - 21
-    0, // 20
-    bits(12, 'x'), // 19 - 8
-    bit('bit7'), // 7
-    bits(2, 'x'), // 6 - 5
-    bit('bit4'), // 4
-    nibble('x') // 3 - 0
-  ]);
-
-  /// Coprocessor register transfer.
-  static final coprocessorRegisterTransfer = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    1, // 26
-    1, // 25
-    0, // 24
-    bits(3, 'opcode1'), // 23 - 21
-    bit('L'), // 20
-    nibble('CRn'), // 19 - 16
-    nibble('Rd'), // 15 - 12
-    nibble('cp_num'), // 11 - 8
-    bits(3, 'opcode2'), // 7 - 5
-    1, // 4
-    nibble('CRm') // 3 - 0
-  ]);
-
-  /// Branch and branch with link.
-  static final branch = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    0, // 26
-    1, // 25
-    bit('L'), // 24
-    bits(24, '24_bit_offset') // 23 - 0
-  ]);
-
-  /// Multiplies and extra loads/stores
-  static final multiplies = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    0, // 26
-    0, // 25
-    bits(17, 'x'), // 24 - 18
-    1, // 7
-    bits(2, 'x'), // 6 - 5
-    1, // 4
-    nibble('x') // 3 - 0
-  ]);
-
-  /// Move immediate to status register
-  static final moveImmediate = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    0, // 26
-    1, // 25
-    1, // 24
-    0, // 23
-    bit('R'), // 22
-    1, // 21
-    0, // 20
-    nibble('mask'), // 19 - 16
-    nibble('SBO'), // 15 - 12
-    nibble('rotate'), // 11 - 8
-    byte('immediate') // 7 - 0
-  ]);
-
-  static final loadsAndStores = new BitPattern([
-    nibble('cond'), // 31 - 28
-    0, // 27
-    1, // 26
-    bit('I'), // 25
-    bit('P'), // 24
-    bit('U'), // 23
-    bit('B'), // 22
-    bit('W'), // 21
-    bit('L'), // 20
-    nibble('Rn'), // 19 - 16
-    nibble('Rd'), // 15 - 12
-    bits(5, 'shift_amount'), // 11 - 7
-    bits(2, 'shift'), // 6 - 5
-    bit('_'), // 4
-    nibble('Rm'), // 3 - 0s
-  ]);
-
-  static final matcher = new BitPatternGroup([
-    dataProcessing,
-    undefined,
-    swi,
-    misc,
-    coprocessorRegisterTransfer,
-    branch,
-    multiplies,
-    moveImmediate,
-    loadsAndStores,
-  ]);
-}
-
 /// Decodes encoded 32-bit ARMv4t into executable [Instruction] instances.
 class ArmDecoder {
   final ArmCompiler _compiler;
@@ -168,24 +21,24 @@ class ArmDecoder {
   Instruction decode(int iw) {
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
 
-    var encoding = Encodings.matcher.match(iw);
-    if (encoding == Encodings.undefined) {
+    var encoding = _Encodings.matcher.match(iw);
+    if (encoding == _Encodings.undefined) {
       return _undefined(iw);
-    } else if (encoding == Encodings.swi) {
+    } else if (encoding == _Encodings.swi) {
       return _decodeSWI(iw);
-    } else if (encoding == Encodings.misc) {
+    } else if (encoding == _Encodings.misc) {
       return _decodeMiscellaneous(iw);
-    } else if (encoding == Encodings.coprocessorRegisterTransfer) {
+    } else if (encoding == _Encodings.coprocessorRegisterTransfer) {
       return _decodeCoprocessorRegisterTransfer(iw);
-    } else if (encoding == Encodings.dataProcessing) {
+    } else if (encoding == _Encodings.dataProcessing) {
       return _decodeData(iw);
-    } else if (encoding == Encodings.branch) {
+    } else if (encoding == _Encodings.branch) {
       return _decodeBranches(iw);
-    } else if (encoding == Encodings.multiplies) {
+    } else if (encoding == _Encodings.multiplies) {
       return _undefined(iw);
-    } else if (encoding == Encodings.moveImmediate) {
+    } else if (encoding == _Encodings.moveImmediate) {
       return _undefined(iw);
-    } else if (encoding == Encodings.loadsAndStores) {
+    } else if (encoding == _Encodings.loadsAndStores) {
       return _decodeLoadStore(iw);
     } else {
       return _undefined(iw);
@@ -409,6 +262,152 @@ class ArmDecoder {
           )
         : _compiler.createB(cond: format.cond, label: format.immediate);
   }
+}
+
+abstract class _Encodings {
+  /// Data processing instruction.
+  static final dataProcessing = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    bit('I'), // 25
+    nibble('opcode'), // 24 - 21
+    bit('S'), // 20
+    nibble('Rn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    bits(5, 'shift_amount'), // 11 - 7
+    bits(2, 'shift'), // 6 - 5
+    bit('_'), // 4
+    nibble('Rm') // 3 - 0
+  ]);
+
+  /// Undefined instruction.
+  static final undefined = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    1, // 25
+    1, // 24
+    0, // 23
+    bit('x'), // 22
+    0, // 21
+    0, // 20
+    bits(20, 'unused') // 19 - 0
+  ]);
+
+  /// Software interrupt.
+  static final swi = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    1, // 24
+    bits(24, 'swi_number') // 23 - 0
+  ]);
+
+  /// Miscellaneous.
+  static final misc = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    0, // 25
+    1, // 24
+    0, // 23
+    bits(2, 'x'), // 22 - 21
+    0, // 20
+    bits(12, 'x'), // 19 - 8
+    bit('bit7'), // 7
+    bits(2, 'x'), // 6 - 5
+    bit('bit4'), // 4
+    nibble('x') // 3 - 0
+  ]);
+
+  /// Coprocessor register transfer.
+  static final coprocessorRegisterTransfer = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    0, // 24
+    bits(3, 'opcode1'), // 23 - 21
+    bit('L'), // 20
+    nibble('CRn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    nibble('cp_num'), // 11 - 8
+    bits(3, 'opcode2'), // 7 - 5
+    1, // 4
+    nibble('CRm') // 3 - 0
+  ]);
+
+  /// Branch and branch with link.
+  static final branch = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    0, // 26
+    1, // 25
+    bit('L'), // 24
+    bits(24, '24_bit_offset') // 23 - 0
+  ]);
+
+  /// Multiplies and extra loads/stores
+  static final multiplies = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    0, // 25
+    bits(17, 'x'), // 24 - 18
+    1, // 7
+    bits(2, 'x'), // 6 - 5
+    1, // 4
+    nibble('x') // 3 - 0
+  ]);
+
+  /// Move immediate to status register
+  static final moveImmediate = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    0, // 26
+    1, // 25
+    1, // 24
+    0, // 23
+    bit('R'), // 22
+    1, // 21
+    0, // 20
+    nibble('mask'), // 19 - 16
+    nibble('SBO'), // 15 - 12
+    nibble('rotate'), // 11 - 8
+    byte('immediate') // 7 - 0
+  ]);
+
+  static final loadsAndStores = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    1, // 26
+    bit('I'), // 25
+    bit('P'), // 24
+    bit('U'), // 23
+    bit('B'), // 22
+    bit('W'), // 21
+    bit('L'), // 20
+    nibble('Rn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    bits(5, 'shift_amount'), // 11 - 7
+    bits(2, 'shift'), // 6 - 5
+    bit('_'), // 4
+    nibble('Rm'), // 3 - 0s
+  ]);
+
+  static final matcher = new BitPatternGroup([
+    dataProcessing,
+    undefined,
+    swi,
+    misc,
+    coprocessorRegisterTransfer,
+    branch,
+    multiplies,
+    moveImmediate,
+    loadsAndStores,
+  ]);
 }
 
 class _Undefined implements Instruction {
