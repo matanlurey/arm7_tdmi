@@ -452,6 +452,38 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
   int get crm => _range(3, 0);
 }
 
+/// Instruction format for Load and Store.
+///
+/// ```
+/// 3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1 9 8 7 6 5 4 3 2 1 0
+/// 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+/// ---------------------------------------------------------------
+/// Cond*** 0 1 I P U B W L Rn***** Rd***** addressing_mode_specific
+/// ```
+///
+/// **INTERNAL ONLY**: Used for decoding.
+@visibleForTesting
+class LoadAndStoreFormat extends ArmInstructionFormat {
+  @literal
+  const LoadAndStoreFormat(int instruction) : super._(instruction);
+
+  // FIXME: Add getters for IPUBW.
+  // FIXME: Add getters for addressing mode specific bits.
+
+  /// True iff the instruction is an unsigned byte access. Else it is a word
+  /// access.
+  bool get b => _set(22);
+
+  /// True iff the instruction is a load. Else it is a store.
+  bool get l => _set(20);
+
+  /// The base register used by the addressing mode.
+  int get rn => _range(19, 16);
+
+  /// The register whose contents are to be loaded or stored.
+  int get rd => _range(15, 12);
+}
+
 /// Instruction format for Software Interrupt.
 ///
 /// ```
