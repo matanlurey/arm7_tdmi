@@ -179,7 +179,7 @@ void main() {
       Encodings.undefined,
       Encodings.swi,
       Encodings.misc,
-      Encodings.crt,
+      Encodings.coprocessorRegisterTransfer,
       Encodings.branch,
       Encodings.multiplies,
     ].forEach((encoding) {

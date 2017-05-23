@@ -67,7 +67,7 @@ abstract class Encodings {
   ]);
 
   /// Coprocessor register transfer.
-  static final crt = new BitPattern([
+  static final coprocessorRegisterTransfer = new BitPattern([
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -146,7 +146,7 @@ abstract class Encodings {
     undefined,
     swi,
     misc,
-    crt,
+    coprocessorRegisterTransfer,
     branch,
     multiplies,
     moveImmediate,
@@ -156,9 +156,6 @@ abstract class Encodings {
 
 /// Decodes encoded 32-bit ARMv4t into executable [Instruction] instances.
 class ArmDecoder {
-  // None of the instructions are yet implemented.
-  //
-  // ignore: unused_field
   final ArmCompiler _compiler;
 
   /// Create a new ARM decoder.
@@ -169,9 +166,6 @@ class ArmDecoder {
 
   /// Decodes and returns an executable instance from an ARM [iw].
   Instruction decode(int iw) {
-    // The strategy is to first check whether the bit pattern of iw matches the
-    // encoding of the instruction formats containing the fewest number of
-    // variable bits.
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
 
     var encoding = Encodings.matcher.match(iw);
@@ -181,7 +175,7 @@ class ArmDecoder {
       return _decodeSWI(iw);
     } else if (encoding == Encodings.misc) {
       return _decodeMiscellaneous(iw);
-    } else if (encoding == Encodings.crt) {
+    } else if (encoding == Encodings.coprocessorRegisterTransfer) {
       return _decodeCoprocessorRegisterTransfer(iw);
     } else if (encoding == Encodings.dataProcessing) {
       return _decodeData(iw);
@@ -227,6 +221,7 @@ class ArmDecoder {
 
   /// See Figure A3-4 of the official ARM docs.
   Instruction _decodeMiscellaneous(int iw) {
+    // FIXME: Create and use format here.
     if (bitRange(iw, 27, 23) == 0x6 ||
         (bitRange(iw, 27, 23) == 0x2 && bitRange(iw, 7, 4) == 0x0)) {
       return _compiler.createMSR(cond: null, spsr: null, field: null, rm: null);
@@ -239,8 +234,7 @@ class ArmDecoder {
   Instruction _decodeCoprocessorRegisterTransfer(int iw) {
     final format = new CoprocessorRegisterFormat(iw);
 
-    // FIXME: Use the format!
-    if (bitRange(iw, 27, 24) == 0xE && isClear(iw, 20) && isSet(iw, 4)) {
+    if (!format.l && isSet(iw, 4)) {
       return _compiler.createMCR(
         cond: format.cond,
         cpnum: null,

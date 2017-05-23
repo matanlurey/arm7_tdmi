@@ -437,7 +437,7 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
   @literal
   const CoprocessorRegisterFormat(int instruction) : super._(instruction);
 
-  int get cpopc => _range(23, 21);
+  int get opcode1 => _range(23, 21);
 
   bool get l => _set(20);
 
@@ -445,9 +445,9 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
 
   int get rd => _range(15, 12);
 
-  int get cphash => _range(11, 8);
+  int get cpnum => _range(11, 8);
 
-  int get cp => _range(7, 5);
+  int get opcode2 => _range(7, 5);
 
   int get crm => _range(3, 0);
 }
