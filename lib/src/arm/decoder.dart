@@ -5,7 +5,6 @@ import 'package:bit_pattern/bit_pattern.dart';
 
 import 'format.dart';
 import 'compiler.dart';
-import 'package:meta/meta.dart';
 
 /// Decodes encoded 32-bit ARMv4t into executable [Instruction] instances.
 class ArmDecoder {
