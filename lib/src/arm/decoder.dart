@@ -407,7 +407,7 @@ abstract class _Encodings {
     1, // 6
     1, // 5
     1, // 4
-    nibble('x')
+    nibble('x') // 3 - 0
   ]);
 
   /// Load/Store multiple.
