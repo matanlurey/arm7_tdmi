@@ -37,7 +37,7 @@ class ArmDecoder {
       return _undefined(iw);
     } else if (encoding == _Encodings.moveImmediate) {
       return _undefined(iw);
-    } else if (encoding == _Encodings.loadsAndStores) {
+    } else if (encoding == _Encodings.loadStoreOffset) {
       return _decodeLoadStore(iw);
     } else {
       return _undefined(iw);
@@ -58,15 +58,35 @@ class ArmDecoder {
     var format = new LoadAndStoreFormat(iw);
     if (format.b) {
       if (format.l) {
-        return _compiler.createLDRByte(user: null, rd: null, aMode: null);
+        return _compiler.createLDRByte(
+          cond: format.cond,
+          user: null,
+          rd: null,
+          aMode: null,
+        );
       } else {
-        return _compiler.createSTRByte(user: null, rd: null, aMode: null);
+        return _compiler.createSTRByte(
+          cond: format.cond,
+          user: null,
+          rd: null,
+          aMode: null,
+        );
       }
     } else {
       if (format.l) {
-        return _compiler.createLDRWord(user: null, rd: null, aMode: null);
+        return _compiler.createLDRWord(
+          cond: format.cond,
+          user: null,
+          rd: null,
+          aMode: null,
+        );
       } else {
-        return _compiler.createSTRWord(user: null, rd: null, aMode: null);
+        return _compiler.createSTRWord(
+          cond: format.cond,
+          user: null,
+          rd: null,
+          aMode: null,
+        );
       }
     }
   }
@@ -294,16 +314,6 @@ abstract class _Encodings {
     bits(20, 'unused') // 19 - 0
   ]);
 
-  /// Software interrupt.
-  static final swi = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    1, // 26
-    1, // 25
-    1, // 24
-    bits(24, 'swi_number') // 23 - 0
-  ]);
-
   /// Miscellaneous.
   static final misc = new BitPattern([
     nibble('cond'), // 31 - 28
@@ -319,33 +329,6 @@ abstract class _Encodings {
     bits(2, 'x'), // 6 - 5
     bit('bit4'), // 4
     nibble('x') // 3 - 0
-  ]);
-
-  /// Coprocessor data processing and coprocessor register transfers.
-  static final coprocessorDataRegister = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    1, // 26
-    1, // 25
-    0, // 24
-    bits(3, 'opcode1'), // 23 - 21
-    bit('L'), // 20
-    nibble('CRn'), // 19 - 16
-    nibble('Rd'), // 15 - 12
-    nibble('cp_num'), // 11 - 8
-    bits(3, 'opcode2'), // 7 - 5
-    bit('_'), // 4
-    nibble('CRm') // 3 - 0
-  ]);
-
-  /// Branch and branch with link.
-  static final branches = new BitPattern([
-    nibble('cond'), // 31 - 28
-    1, // 27
-    0, // 26
-    1, // 25
-    bit('L'), // 24
-    bits(24, '24_bit_offset') // 23 - 0
   ]);
 
   /// Multiplies and extra loads/stores
@@ -378,8 +361,8 @@ abstract class _Encodings {
     byte('immediate') // 7 - 0
   ]);
 
-  /// Loads and stores.
-  static final loadsAndStores = new BitPattern([
+  /// Load/store immediate/register offset.
+  static final loadStoreOffset = new BitPattern([
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -394,19 +377,132 @@ abstract class _Encodings {
     bits(5, 'shift_amount'), // 11 - 7
     bits(2, 'shift'), // 6 - 5
     bit('_'), // 4
-    nibble('Rm'), // 3 - 0s
+    nibble('Rm'), // 3 - 0
+  ]);
+
+  /// Media instructions.
+  static final media = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    1, // 26
+    1, // 25
+    bits(20, 'x'), // 24 - 5
+    1, // 4
+    nibble('x') // 3 - 0
+  ]);
+
+  /// Architecturally undefined.
+  static final archUndefined = new BitPattern([
+    nibble('cond'), // 31 - 28
+    0, // 27
+    1, // 26
+    1, // 25
+    1, // 24
+    1, // 23
+    1, // 22
+    1, // 21
+    1, // 20
+    bits(12, 'x'), // 19 - 8
+    1, // 7
+    1, // 6
+    1, // 5
+    1, // 4
+    nibble('x') // 3 - 0
+  ]);
+
+  /// Load/Store multiple.
+  static final loadStoreMultiple = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    0, // 26
+    0, // 25
+    bit('P'), // 24
+    bit('U'), // 23
+    bit('S'), // 22
+    bit('W'), // 21
+    bit('L'), // 20
+    nibble('Rn'), // 19 - 16
+    bits(16, 'register_list'), // 15 - 0
+  ]);
+
+  /// Branch and branch with link.
+  static final branches = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    0, // 26
+    1, // 25
+    bit('L'), // 24
+    bits(24, '24_bit_offset') // 23 - 0
+  ]);
+
+  /// Coprocessor load/store and double register transfers.
+  static final coprocessorLoadsStores = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    0, // 25
+    bit('P'), // 24
+    bit('U'), // 23
+    bit('N'), // 22
+    bit('W'), // 21
+    bit('L'), // 20
+    nibble('Rn'), // 19 - 16
+    nibble('CRd'), // 15 - 12
+    nibble('cp_num'), // 11 - 8
+    byte('offset') // 7 -0
+  ]);
+
+  /// Coprocessor data processing and coprocessor register transfers.
+  static final coprocessorDataRegister = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    0, // 24
+    bits(3, 'opcode1'), // 23 - 21
+    bit('L'), // 20
+    nibble('CRn'), // 19 - 16
+    nibble('Rd'), // 15 - 12
+    nibble('cp_num'), // 11 - 8
+    bits(3, 'opcode2'), // 7 - 5
+    bit('_'), // 4
+    nibble('CRm') // 3 - 0
+  ]);
+
+  /// Software interrupt.
+  static final swi = new BitPattern([
+    nibble('cond'), // 31 - 28
+    1, // 27
+    1, // 26
+    1, // 25
+    1, // 24
+    bits(24, 'swi_number') // 23 - 0
+  ]);
+
+  /// Unconditional instructions.
+  static final unconditional = new BitPattern([
+    1, // 31
+    1, // 30
+    1, // 29
+    1, // 28
+    bits(28, 'x'), // 27 - 0
   ]);
 
   static final matcher = new BitPatternGroup([
     dataProcessing,
-    undefined,
-    swi,
     misc,
-    coprocessorDataRegister,
-    branches,
+    undefined,
     multiplies,
     moveImmediate,
-    loadsAndStores,
+    loadStoreOffset,
+    media,
+    archUndefined,
+    loadStoreMultiple,
+    branches,
+    coprocessorLoadsStores,
+    coprocessorDataRegister,
+    swi,
+    unconditional,
   ]);
 }
 
