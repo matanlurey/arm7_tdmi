@@ -58,6 +58,7 @@ abstract class AddressingMode2 {
             isAdd: _scaledEncoding.u(iw),
           );
     }
+
     if (_isPostIndexed(iw)) {
       return (Cpu cpu) => _postIndexedAddress(cpu, address: address, rn: rn);
     } else if (_isPreIndexed(iw)) {
@@ -131,12 +132,9 @@ abstract class AddressingMode2 {
   /// Returns [address] as the address.
   ///
   /// No registers are updated.
-  static int _nonIndexedAddress(
-    Cpu cpu, {
-    @required AddressComputation address,
-  }) {
-    return address(cpu);
-  }
+  static int _nonIndexedAddress(Cpu cpu,
+          {@required AddressComputation address}) =>
+      address(cpu);
 
   /// Returns [address] as the address.
   ///
