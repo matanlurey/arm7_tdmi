@@ -20,7 +20,7 @@ class ArmDecoder {
   Instruction decode(int iw) {
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
 
-    var encoding = _Encodings.matcher.match(iw);
+    final encoding = _Encodings.matcher.match(iw);
     if (encoding == _Encodings.undefined) {
       return _undefined(iw);
     } else if (encoding == _Encodings.swi) {
@@ -55,7 +55,7 @@ class ArmDecoder {
       - STRH Store halfword
       - STM Store multiple
      */
-    var format = new LoadAndStoreFormat(iw);
+    final format = new LoadAndStoreFormat(iw);
     if (format.b) {
       if (format.l) {
         return _compiler.createLDRByte(
@@ -269,6 +269,7 @@ class ArmDecoder {
     throw new ArgumentError('Could not decode opcode 0x${hexOp}');
   }
 
+  // ignore: strong_mode_implicit_dynamic_parameter
   Instruction _undefined(_) => const _Undefined();
 
   Instruction _decodeBranches(int iw) {
@@ -285,7 +286,7 @@ class ArmDecoder {
 
 abstract class _Encodings {
   /// Data processing instruction.
-  static final dataProcessing = new BitPattern([
+  static final dataProcessing = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -301,7 +302,7 @@ abstract class _Encodings {
   ]);
 
   /// Undefined instruction.
-  static final undefined = new BitPattern([
+  static final undefined = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -315,7 +316,7 @@ abstract class _Encodings {
   ]);
 
   /// Miscellaneous.
-  static final misc = new BitPattern([
+  static final misc = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -332,7 +333,7 @@ abstract class _Encodings {
   ]);
 
   /// Multiplies and extra loads/stores
-  static final multiplies = new BitPattern([
+  static final multiplies = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -345,7 +346,7 @@ abstract class _Encodings {
   ]);
 
   /// Move immediate to status register.
-  static final moveImmediate = new BitPattern([
+  static final moveImmediate = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -362,7 +363,7 @@ abstract class _Encodings {
   ]);
 
   /// Load/store immediate/register offset.
-  static final loadStoreOffset = new BitPattern([
+  static final loadStoreOffset = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -381,7 +382,7 @@ abstract class _Encodings {
   ]);
 
   /// Media instructions.
-  static final media = new BitPattern([
+  static final media = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -392,7 +393,7 @@ abstract class _Encodings {
   ]);
 
   /// Architecturally undefined.
-  static final archUndefined = new BitPattern([
+  static final archUndefined = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -411,7 +412,7 @@ abstract class _Encodings {
   ]);
 
   /// Load/Store multiple.
-  static final loadStoreMultiple = new BitPattern([
+  static final loadStoreMultiple = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     0, // 26
@@ -426,7 +427,7 @@ abstract class _Encodings {
   ]);
 
   /// Branch and branch with link.
-  static final branches = new BitPattern([
+  static final branches = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     0, // 26
@@ -436,7 +437,7 @@ abstract class _Encodings {
   ]);
 
   /// Coprocessor load/store and double register transfers.
-  static final coprocessorLoadsStores = new BitPattern([
+  static final coprocessorLoadsStores = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -453,7 +454,7 @@ abstract class _Encodings {
   ]);
 
   /// Coprocessor data processing and coprocessor register transfers.
-  static final coprocessorDataRegister = new BitPattern([
+  static final coprocessorDataRegister = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -470,7 +471,7 @@ abstract class _Encodings {
   ]);
 
   /// Software interrupt.
-  static final swi = new BitPattern([
+  static final swi = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -480,7 +481,7 @@ abstract class _Encodings {
   ]);
 
   /// Unconditional instructions.
-  static final unconditional = new BitPattern([
+  static final unconditional = new BitPattern(<dynamic>[
     1, // 31
     1, // 30
     1, // 29

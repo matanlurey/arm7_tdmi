@@ -1,6 +1,7 @@
 # arm7_tdmi
 
 [![Build Status](https://travis-ci.org/matanlurey/arm7_tdmi.svg?branch=master)](https://travis-ci.org/matanlurey/arm7_tdmi)
+[![Coverage Status](https://coveralls.io/repos/github/matanlurey/arm7_tdmi/badge.svg)](https://coveralls.io/github/matanlurey/arm7_tdmi)
 
 An emulator for the ARM7/TDMI processor.
 

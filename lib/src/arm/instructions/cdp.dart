@@ -7,5 +7,5 @@ class _ArmInstruction$CDP extends Instruction {
       : super._(condition: condition, name: 'CDP');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

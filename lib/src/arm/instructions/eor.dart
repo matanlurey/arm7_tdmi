@@ -7,5 +7,5 @@ class _ArmInstruction$EOR extends Instruction {
       : super._(condition: condition, name: 'EOR');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

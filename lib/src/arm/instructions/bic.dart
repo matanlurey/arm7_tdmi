@@ -7,5 +7,5 @@ class _ArmInstruction$BIC extends Instruction {
       : super._(condition: condition, name: 'BIC');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

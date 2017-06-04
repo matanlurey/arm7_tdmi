@@ -20,7 +20,7 @@ void main() {
     const justZero = const <int>[0];
     const just32 = const <int>[32];
 
-    void commonSetUp(shifter) {
+    void commonSetUp(Shifter shifter) {
       tester = new ShifterOperandTester(shifter);
     }
 
@@ -29,6 +29,7 @@ void main() {
     });
 
     group('immediateValue should rotate an immediate value', () {
+      // ignore: strong_mode_implicit_dynamic_parameter
       int expectedShifterOperand(int immediate, int rotate, _) =>
           rotateRight(immediate, rotate * 2);
 
@@ -58,7 +59,7 @@ void main() {
 
     group('LSLImmediate', () {
       setUp(() {
-        commonSetUp(AddressingMode1.LSLImmediate);
+        commonSetUp(AddressingMode1.logicalShiftLeftByImmediate);
       });
 
       test('shift == 0', () {
@@ -81,7 +82,7 @@ void main() {
 
     group('LSLRegister', () {
       setUp(() {
-        commonSetUp(AddressingMode1.LSLRegister);
+        commonSetUp(AddressingMode1.logicalShiftLeftByRegister);
       });
 
       test('shift == 0', () {
@@ -120,7 +121,7 @@ void main() {
 
     group('LSRImmediate', () {
       setUp(() {
-        commonSetUp(AddressingMode1.LSRImmediate);
+        commonSetUp(AddressingMode1.logicalShiftRightByImmediate);
       });
 
       test('shift == 0', () {
@@ -142,7 +143,7 @@ void main() {
 
     group('LSRRegister', () {
       setUp(() {
-        commonSetUp(AddressingMode1.LSRRegister);
+        commonSetUp(AddressingMode1.logicalShiftRightByRegister);
       });
 
       test('shift == 0', () {
@@ -180,7 +181,7 @@ void main() {
 
     group('ASRImmediate', () {
       setUp(() {
-        commonSetUp(AddressingMode1.ASRImmediate);
+        commonSetUp(AddressingMode1.shiftRightByImmediate);
       });
 
       group('shift == 0 and bit 31 of the operand is', () {
@@ -214,7 +215,7 @@ void main() {
 
     group('ASRRegister', () {
       setUp(() {
-        commonSetUp(AddressingMode1.ASRRegister);
+        commonSetUp(AddressingMode1.shiftRightByRegister);
       });
 
       test('shift == 0', () {
@@ -258,7 +259,8 @@ void main() {
       ShifterOperandTester tester;
 
       setUp(() {
-        tester = new ShifterOperandTester(AddressingMode1.RORImmediate);
+        tester =
+            new ShifterOperandTester(AddressingMode1.rotateRightByImmediate);
       });
 
       test('shift == 0', () {
@@ -266,7 +268,7 @@ void main() {
             firstOperands: firstOperands,
             secondOperands: justZero,
             expectedOperand: (int op1, _, bool carryFlag) {
-              int c = carryFlag ? 1 : 0;
+              final c = carryFlag ? 1 : 0;
               return (c << 31) | (op1 >> 1);
             },
             expectedCarryOut: (int op1, _, __) => isClear(op1, 0));
@@ -286,7 +288,8 @@ void main() {
       ShifterOperandTester tester;
 
       setUp(() {
-        tester = new ShifterOperandTester(AddressingMode1.RORRegister);
+        tester =
+            new ShifterOperandTester(AddressingMode1.rotateRightByRegister);
       });
 
       test('shift == 0', () {
@@ -309,9 +312,11 @@ void main() {
 }
 
 /// Computes a shifter operand of zero
+// ignore: strong_mode_implicit_dynamic_parameter
 int zero(int _, int __, bool ___) => 0;
 
 /// Computes a shifter operand of the max unsigned 32-bit integer value.
+// ignore: strong_mode_implicit_dynamic_parameter
 int uint32Max(_, __, ___) => uint32.max;
 
 /// Computes a shifter operand equal to [op1].
@@ -324,6 +329,7 @@ int lrShift(int op1, int shift, bool _) => op1 >> shift;
 int llShift(int op1, int shift, bool _) => op1 << shift;
 
 /// Computes a shifter operand by arithmetically-right shifting [op1] by [shift].
+// ignore: strong_mode_implicit_dynamic_parameter
 int arShift(int op1, int shift, _) => uint32.arithmeticShiftRight(op1, shift);
 
 /// Computes a shifter carry out identical to the initial CPSR carry flag.

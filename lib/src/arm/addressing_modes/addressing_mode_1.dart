@@ -60,32 +60,42 @@ typedef ShifterValues Immediate32Shifter(Cpu cpu, {int rotate, int immediate});
 /// These auxiliary values are stored directly on the [Cpu]. Shifters can be
 /// called directly or lazily after being decoded from an ARM instruction.
 abstract class AddressingMode1 {
+  // ignore: constant_identifier_names
   static const LSL_IMM = 0x0;
+  // ignore: constant_identifier_names
   static const REGISTER = 0x0;
+  // ignore: constant_identifier_names
   static const LSL_REG = 0x1;
+  // ignore: constant_identifier_names
   static const LSR_IMM = 0x2;
+  // ignore: constant_identifier_names
   static const LSR_REG = 0x3;
+  // ignore: constant_identifier_names
   static const ASR_IMM = 0x4;
+  // ignore: constant_identifier_names
   static const ASR_REG = 0x5;
   // Rotate-right with extend (RRX) is also identified by 0x6.  There is no
   // collision because these share the same implementation.
+  // ignore: constant_identifier_names
   static const ROR_IMM = 0x6;
+  // ignore: constant_identifier_names
   static const ROR_REG = 0x7;
+  // ignore: constant_identifier_names
   static const RRX = 0x06;
 
-  static const _registerShifters = const <int, dynamic>{
+  static const _registerShifters = const <int, Function>{
     REGISTER: register,
-    LSL_REG: LSLRegister,
-    LSR_REG: LSRRegister,
-    ASR_REG: ASRRegister,
-    ROR_REG: RORRegister,
+    LSL_REG: logicalShiftLeftByRegister,
+    LSR_REG: logicalShiftRightByRegister,
+    ASR_REG: shiftRightByRegister,
+    ROR_REG: rotateRightByRegister,
   };
 
-  static const _immediateShifters = const <int, dynamic>{
-    LSL_IMM: LSLImmediate,
-    LSR_IMM: LSRImmediate,
-    ASR_IMM: ASRImmediate,
-    ROR_IMM: RORImmediate,
+  static const _immediateShifters = const <int, Function>{
+    LSL_IMM: logicalShiftLeftByImmediate,
+    LSR_IMM: logicalShiftRightByImmediate,
+    ASR_IMM: shiftRightByImmediate,
+    ROR_IMM: rotateRightByImmediate,
   };
 
   /// Decodes the [Shifter] encoded by [shifterBits].
@@ -94,34 +104,42 @@ abstract class AddressingMode1 {
   /// rotated.
   static Shifter decodeShifter(int shifterBits, bool isImmediate32) {
     if (isImmediate32) {
-      var encoding = new _Immediate32ShifterEncoding(shifterBits);
+      final encoding = new _Immediate32ShifterEncoding(shifterBits);
       return (Cpu cpu) => immediate(cpu,
           rotate: encoding.rotate, immediate: encoding.immediate);
     }
 
-    int shifterCode = bitRange(shifterBits, 6, 4);
+    final shifterCode = bitRange(shifterBits, 6, 4);
 
     /// Whether [shifterBits] is an [_ImmediateShifterEncoding].
-    bool isImmediate = isClear(shifterBits, 4);
+    final isImmediate = isClear(shifterBits, 4);
 
     /// Whether [shifterBits] is an [_RegisterShifterEncoding].
-    bool isRegister = isClear(shifterBits, 7) && isSet(shifterBits, 4);
+    final isRegister = isClear(shifterBits, 7) && isSet(shifterBits, 4);
 
     if (isImmediate) {
-      var shifter = _immediateShifters[shifterCode];
+      final shifter = _immediateShifters[shifterCode];
       if (shifter == null) {
         throw new UnsupportedError('$shifterBits');
       }
-      var encoding = new _ImmediateShifterEncoding(shifterBits);
-      return (Cpu cpu) => shifter(cpu, shift: encoding.shift, rm: encoding.rm);
+      final encoding = new _ImmediateShifterEncoding(shifterBits);
+      return (Cpu cpu) => shifter(
+            cpu,
+            shift: encoding.shift,
+            rm: encoding.rm,
+          ) as ShifterValues;
     } else {
       assert(isRegister);
-      var shifter = _registerShifters[shifterCode];
+      final shifter = _registerShifters[shifterCode];
       if (shifter == null) {
         throw new UnsupportedError('$shifterBits');
       }
-      var encoding = new _RegisterShifterEncoding(shifterBits);
-      return (Cpu cpu) => shifter(cpu, rs: encoding.rs, rm: encoding.rm);
+      final encoding = new _RegisterShifterEncoding(shifterBits);
+      return (Cpu cpu) => shifter(
+            cpu,
+            rs: encoding.rs,
+            rm: encoding.rm,
+          ) as ShifterValues;
     }
   }
 
@@ -153,9 +171,12 @@ abstract class AddressingMode1 {
   /// Logical shift left by immediate.
   ///
   /// See [_ImmediateShifterEncoding] for parameter documentation.
-  static ShifterValues LSLImmediate(Cpu cpu,
-      {@required int shift, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues logicalShiftLeftByImmediate(
+    Cpu cpu, {
+    @required int shift,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
@@ -174,13 +195,16 @@ abstract class AddressingMode1 {
   /// Logical shift left by register.
   ///
   /// See [_RegisterShifterEncoding] for parameter documentation.
-  static ShifterValues LSLRegister(Cpu cpu,
-      {@required int rs, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues logicalShiftLeftByRegister(
+    Cpu cpu, {
+    @required int rs,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
-    int shift = bitRange(gprs[rs], 7, 0);
+    final shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       operand = gprs[rm];
       carryOut = cpu.cpsr.c;
@@ -202,9 +226,12 @@ abstract class AddressingMode1 {
   /// Logical shift right by immediate.
   ///
   /// See [_ImmediateShifterEncoding] for parameter documentation.
-  static ShifterValues LSRImmediate(Cpu cpu,
-      {@required int shift, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues logicalShiftRightByImmediate(
+    Cpu cpu, {
+    @required int shift,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
@@ -230,13 +257,16 @@ abstract class AddressingMode1 {
   /// zero.
   ///
   /// See [_RegisterShifterEncoding] for parameter documentation.
-  static ShifterValues LSRRegister(Cpu cpu,
-      {@required int rs, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues logicalShiftRightByRegister(
+    Cpu cpu, {
+    @required int rs,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
-    int shift = bitRange(gprs[rs], 7, 0);
+    final shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       operand = gprs[rm];
       carryOut = cpu.cpsr.c;
@@ -257,9 +287,12 @@ abstract class AddressingMode1 {
   /// Arithmetic shift right by immediate.
   ///
   /// See [_ImmediateShifterEncoding] for parameter documentation.
-  static ShifterValues ASRImmediate(Cpu cpu,
-      {@required int shift, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues shiftRightByImmediate(
+    Cpu cpu, {
+    @required int shift,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
@@ -282,13 +315,16 @@ abstract class AddressingMode1 {
   /// Arithmetic shift right by register.
   ///
   /// See [_RegisterShifterEncoding] for parameter documentation.
-  static ShifterValues ASRRegister(Cpu cpu,
-      {@required int rs, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues shiftRightByRegister(
+    Cpu cpu, {
+    @required int rs,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
-    int shift = bitRange(gprs[rs], 7, 0);
+    final shift = bitRange(gprs[rs], 7, 0);
     if (shift == 0) {
       operand = gprs[rm];
       carryOut = cpu.cpsr.c;
@@ -307,15 +343,18 @@ abstract class AddressingMode1 {
   /// Rotate right by immediate.
   ///
   /// See [_ImmediateShifterEncoding] for parameter documentation.
-  static ShifterValues RORImmediate(Cpu cpu,
-      {@required int shift, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues rotateRightByImmediate(
+    Cpu cpu, {
+    @required int shift,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
     if (shift == 0) {
       // RRX
-      int c = cpu.cpsr.c ? 1 : 0;
+      final c = cpu.cpsr.c ? 1 : 0;
       operand = (c << 31) | (gprs[rm] >> 1);
       carryOut = isClear(gprs[rm], 0);
     } else {
@@ -330,14 +369,17 @@ abstract class AddressingMode1 {
   /// Rotate right by register.
   ///
   /// See [_RegisterShifterEncoding] for parameter documentation.
-  static ShifterValues RORRegister(Cpu cpu,
-      {@required int rs, @required int rm}) {
-    var gprs = cpu.gprs;
+  static ShifterValues rotateRightByRegister(
+    Cpu cpu, {
+    @required int rs,
+    @required int rm,
+  }) {
+    final gprs = cpu.gprs;
     int operand;
     bool carryOut;
 
-    int shift = bitRange(gprs[rs], 7, 0);
-    int shiftLSB = bitRange(gprs[rs], 4, 0); // + 1 bit.
+    final shift = bitRange(gprs[rs], 7, 0);
+    final shiftLSB = bitRange(gprs[rs], 4, 0); // + 1 bit.
 
     if (shift == 0) {
       operand = gprs[rm];

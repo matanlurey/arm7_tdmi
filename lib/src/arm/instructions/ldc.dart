@@ -7,5 +7,5 @@ class _ArmInstruction$LDC extends Instruction {
       : super._(condition: condition, name: 'LDC');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

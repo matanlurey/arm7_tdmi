@@ -7,5 +7,5 @@ class _ArmInstruction$RSC extends Instruction {
       : super._(condition: condition, name: 'RSC');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

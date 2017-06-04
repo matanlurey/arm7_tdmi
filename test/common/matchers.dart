@@ -12,7 +12,7 @@ class EqualsPsr extends Matcher {
   }
 
   @override
-  bool matches(item, _) => item is Psr && item == _cpsr;
+  bool matches(Object item, _) => item is Psr && item == _cpsr;
 
   @override
   Description describeMismatch(

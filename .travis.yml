@@ -1,8 +1,38 @@
+# Use the default dart configuration.
 language: dart
 sudo: false
 dart:
+  - dev
   - stable
+
+# Avoid re-downloading packages across different builds if possible.
 cache:
   directories:
     - $HOME/.pub-cache
-script: ./tool/travis.sh
+
+# Check for analysis issues, run the test cases, and ensure `dartfmt` is run.
+dart_task:
+  - dartanalyzer
+  - pub run test -p vm
+  - dartfmt
+
+# If we're successful this far, then report coverage information to coveralls.
+after_script: dart tool/coverage.dart
+
+# The Dart language is constantly being worked on, and sometimes the dev and
+# stable builds don't agree on what is considered formatted or what is analysis
+# warning free (though this does not effect _using_ the library, likely).
+#
+# * We exclude `dev` from formatting checks.
+# * We allow failures on `dev` for tests and the analyzer.
+matrix:
+  allow_failures:
+    - dart: dev
+      dart_task: dartanalyzer
+    - dart: dev
+      dart_task: pub run test -p vm
+  exclude:
+    - dart: dev
+      dart_task: dartfmt
+    - dart: dev
+      dart_task: dartanalyzer
