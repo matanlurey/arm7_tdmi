@@ -62,7 +62,7 @@ class ArmException {
   const ArmException._(this.code, this.type, this.mode);
 }
 
-class MemoryException {
+class MemoryException implements Exception {
   static const badAddress = const MemoryException._('Bad Address');
 
   /// Human-reabable exception message.
