@@ -18,7 +18,7 @@ class _ArmInstruction$LDR extends Instruction {
     @required this.address,
     @required this.isByte,
   })
-      : super._(condition: condition, name: 'LDR');
+      : super._(condition: condition, name: isByte ? 'LDRB' : 'LDR');
 
   @override
   int execute(Cpu cpu) {
