@@ -30,7 +30,7 @@ class _ArmInstruction$LDR extends Instruction {
           : cpu.read32(address(cpu));
     } on MemoryException catch (_) {
       cpu.raise(ArmException.dataAbort);
-    } 
+    }
 
     return cycleCount;
   }
