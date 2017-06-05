@@ -1,5 +1,6 @@
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 
 import 'condition.dart';
 
@@ -463,16 +464,25 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
 ///
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
-class LoadAndStoreFormat extends ArmInstructionFormat {
+class LoadStoreFormat extends ArmInstructionFormat {
   @literal
-  const LoadAndStoreFormat(int instruction) : super._(instruction);
+  const LoadStoreFormat(int instruction) : super._(instruction);
 
-  // FIXME: Add getters for IPUBW.
-  // FIXME: Add getters for addressing mode specific bits.
+  /// Together with [w], determines the indexing type of an instruction's
+  /// address computation. See [AddressingMode2] for full documentation.X
+  bool get p => _set(24);
+
+  /// True iff this instruction's address is computed as an addtion of two
+  /// values.  Otherwise it is a subtraction.
+  bool get u => _set(23);
 
   /// True iff the instruction is an unsigned byte access. Else it is a word
   /// access.
   bool get b => _set(22);
+
+  /// Together with [p], determines the indexing type of this instruction's
+  /// address computation. See [AddressingMode2] for full documentation.X
+  bool get w => _set(21);
 
   /// True iff the instruction is a load. Else it is a store.
   bool get l => _set(20);

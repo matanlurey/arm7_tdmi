@@ -96,13 +96,19 @@ void main() {
       abortInst, // ldr r1, [r0]
       0x12345678, // embedded constant for ldr r0 instruction
     ]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+    final cpu = new Cpu.noExecution(read32: (a) {
+      assert(a % 4 == 0);
+      if (a >= rom.length * 4) {
+        throw MemoryException.badAddress;
+      }
+      return rom[a ~/ 4];
+    })
       ..step(); // Reset branch.
-    expect(cpu.pc, resetLabel);
 
-    /*
-    // R0 should contain 0x12345678 now.
+    expect(cpu.pc, resetLabel);
     cpu.step();
+
+    // R0 should contain 0x12345678 now.
     expect(cpu.gprs[0], 0x12345678);
 
     // Trying to read from memory address 0x12345678 should raise a data-abort.
@@ -114,6 +120,5 @@ void main() {
     // Instruction that caused the abort should be at R14_abt - 8.
     final address = cpu.gprs[14] - 8;
     expect(rom[address ~/ 4], abortInst);
-    */
   });
 }
