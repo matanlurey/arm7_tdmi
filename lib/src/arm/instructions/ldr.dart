@@ -26,12 +26,11 @@ class _ArmInstruction$LDR extends Instruction {
 
     try {
       cpu.gprs[rd] = isByte
-          ? throw new UnimplementedError('LDRB')
+          ? throw new UnimplementedError(name)
           : cpu.read32(address(cpu));
     } on MemoryException catch (_) {
       cpu.raise(ArmException.dataAbort);
-      return cycleCount;
-    }
+    } 
 
     return cycleCount;
   }
