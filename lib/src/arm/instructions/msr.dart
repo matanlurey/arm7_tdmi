@@ -8,5 +8,5 @@ class _ArmInstruction$MSR extends Instruction {
       : super._(condition: condition, name: 'MSR');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

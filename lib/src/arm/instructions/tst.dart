@@ -7,5 +7,5 @@ class _ArmInstruction$TST extends Instruction {
       : super._(condition: condition, name: 'TST');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

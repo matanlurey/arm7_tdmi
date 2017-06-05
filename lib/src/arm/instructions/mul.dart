@@ -7,5 +7,5 @@ class _ArmInstruction$MUL extends Instruction {
       : super._(condition: condition, name: 'MUL');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }
