@@ -1,5 +1,6 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 import 'package:binary/binary.dart' hide bit;
 import 'package:bit_pattern/bit_pattern.dart';
 
@@ -45,50 +46,20 @@ class ArmDecoder {
   }
 
   Instruction _decodeLoadStore(int iw) {
-    /*
-      FIXME:
-      - LDRH Load halfword
-      - LDRSB Load signed byte
-      - LDRSH Load signed halfword
-      - LDM Load multiple
-      - STRB Store byte
-      - STRH Store halfword
-      - STM Store multiple
-     */
-    var format = new LoadAndStoreFormat(iw);
-    if (format.b) {
-      if (format.l) {
-        return _compiler.createLDRByte(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      } else {
-        return _compiler.createSTRByte(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      }
-    } else {
-      if (format.l) {
-        return _compiler.createLDRWord(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      } else {
-        return _compiler.createSTRWord(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      }
-    }
+    var format = new LoadStoreFormat(iw);
+    return format.l
+        ? _compiler.createLDR(
+            cond: format.cond,
+            isByte: format.b,
+            rd: format.rd,
+            address: AddressingMode2.decodeAddress(iw),
+          )
+        : _compiler.createSTR(
+            cond: format.cond,
+            user: null,
+            rd: null,
+            aMode: null,
+          );
   }
 
   /// See Figure A3-4 of the official ARM docs.
