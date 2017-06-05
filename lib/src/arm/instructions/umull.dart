@@ -7,5 +7,5 @@ class _ArmInstruction$UMULL extends Instruction {
       : super._(condition: condition, name: 'UMULL');
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

@@ -15,13 +15,12 @@ void main() {
     final cpu = new TracedCpu(
       read16: (a) => rom[a ~/ 4],
       read32: (a) => rom[a ~/ 4],
-    );
-    cpu.step();
+    )..step();
     expect(cpu.pc, resetLabel);
     for (var i = 0; i < 3; i++) {
       cpu.step();
     }
-    var expected = new Psr.bits(cpu.cpsr.value)
+    final expected = new Psr.bits(cpu.cpsr.value)
       ..n = false
       ..z = true
       ..c = true
@@ -56,8 +55,8 @@ void main() {
 
   test('Undefined instruction trap should be triggered', () {
     final rom = createRom([0xFF000000 /* Undefined Instruction */]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
+    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step(); // Execute undefined instruction.
     expect(
@@ -73,8 +72,8 @@ void main() {
 
   test('Software interrupt should raise a SWI exception', () {
     final rom = createRom([0xEF00000F]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
+    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step();
 
@@ -86,7 +85,7 @@ void main() {
     expect(cpu.mode, Mode.svc);
 
     // R14_svc - 4 should be address of the SWI instruction.
-    var address = cpu.gprs[14] - 4;
+    final address = cpu.gprs[14] - 4;
     expect(rom[address ~/ 4], 0xEF00000F);
   });
 
@@ -97,8 +96,8 @@ void main() {
       abortInst, // ldr r1, [r0]
       0x12345678, // embedded constant for ldr r0 instruction
     ]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
+    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
 
     /*

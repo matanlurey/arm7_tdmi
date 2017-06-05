@@ -80,6 +80,7 @@ import 'package:meta/meta.dart';
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
 class Cpu {
+  // ignore: strong_mode_implicit_dynamic_parameter
   static int _unsupportedRead(_) {
     throw new UnsupportedError('No execution supported');
   }

@@ -32,7 +32,7 @@ class ShifterOperandTester {
   static const _rm = 2;
 
   /// The shifter to test.
-  final shifter;
+  final Shifter shifter;
 
   /// Creates a [Cpu] for testing.
   ///
@@ -72,12 +72,18 @@ class ShifterOperandTester {
           final cpu = _cpu(op1, op2, carryFlag);
           final reason = _reason(op1, op2, carryFlag);
 
-          var shiftValues = shifterRunner.run(cpu, op1, op2, reason);
+          final shiftValues = shifterRunner.run(cpu, op1, op2, reason);
 
-          expect(shiftValues.operand, expectedOperand(op1, op2, carryFlag),
-              reason: reason);
-          expect(shiftValues.carryOut, expectedCarryOut(op1, op2, carryFlag),
-              reason: reason);
+          expect(
+            shiftValues.operand,
+            expectedOperand(op1, op2, carryFlag),
+            reason: reason,
+          );
+          expect(
+            shiftValues.carryOut,
+            expectedCarryOut(op1, op2, carryFlag),
+            reason: reason,
+          );
         });
       });
     });
@@ -86,7 +92,7 @@ class ShifterOperandTester {
 
 /// Executes a shifter.
 abstract class _ShifterRunner {
-  factory _ShifterRunner(shifter, int rm, int rs) {
+  factory _ShifterRunner(Shifter shifter, int rm, int rs) {
     if (shifter is Immediate32Shifter) {
       return new _Immediate32ShifterRunner(shifter);
     } else if (shifter is ImmediateShifter) {

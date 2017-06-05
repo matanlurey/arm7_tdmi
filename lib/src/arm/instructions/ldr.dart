@@ -10,5 +10,5 @@ class _ArmInstruction$LDR extends Instruction {
         );
 
   @override
-  noSuchMethod(_) => super.noSuchMethod(_);
+  dynamic noSuchMethod(_) => super.noSuchMethod(_);
 }

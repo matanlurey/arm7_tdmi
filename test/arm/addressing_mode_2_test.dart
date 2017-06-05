@@ -112,6 +112,7 @@ void main() {
       //   expectedRnValue: null,
       // ),
     ].forEach((testCase) {
+      // ignore: non_constant_identifier_names
       final PUBWL =
           bitRange(testCase.iw, 24, 20).toRadixString(2).padLeft(5, '0');
       test('${testCase.asm} (PUBWL=$PUBWL)', () {

@@ -46,14 +46,17 @@ class Registers {
 
   /// Stack pointer index.
   @visibleForTesting
+  // ignore: constant_identifier_names
   static const SP = 13;
 
   /// Link register index.
   @visibleForTesting
+  // ignore: constant_identifier_names
   static const LR = 14;
 
   /// Program counter index.
   @visibleForTesting
+  // ignore: constant_identifier_names
   static const PC = 15;
 
   /// Offset values for a given operating [Mode].
@@ -73,8 +76,7 @@ class Registers {
   /// Create a new empty register set with a pre-specified operating [mode].
   factory Registers({Mode mode: Mode.svc}) {
     final buffer = new Uint32List(_totalSize * Uint32List.BYTES_PER_ELEMENT);
-    final registers = new Registers.view(buffer);
-    registers.reset();
+    final registers = new Registers.view(buffer)..reset();
     return registers;
   }
 
@@ -171,7 +173,7 @@ class Registers {
   /// Sets a [register] [value].
   ///
   /// The memory location accessed is dependent on the operating mode.
-  operator []=(int register, int value) {
+  void operator []=(int register, int value) {
     assert(() {
       if (register < 0 || register > 15) {
         throw new RangeError.range(register, 0, 15);
