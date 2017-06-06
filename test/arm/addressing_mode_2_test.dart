@@ -19,7 +19,7 @@ void main() {
     // from this list.  Every armv4t addressing mode 2 instruction computes the
     // offset as an addition (bit U/23 is set).
     [
-      // No-indexing, Imm offset
+      // No indexing, immediate offset.
       new TestCase(
         asm: "ldrb  r2, [pc, #56]",
         iw: 0xe5df2038,
@@ -28,89 +28,88 @@ void main() {
         expectedAddress: 56,
         expectedRnValue: 0,
       ),
-      // No-indexing, Reg offset, offset=12
+      // No indexing, register offset.
       new TestCase(
         asm: "ldr  r2, [pc, r8]",
         iw: 0xe79f2008,
         initRegisters: (Registers gprs) {
-          gprs[15] = 25; // Initial base-register value.
+          gprs[15] = 25; // Initial base register value.
           gprs[8] = 12; // Offset register value.
         },
         rn: 15,
-        expectedAddress: 37,
+        expectedAddress: 25 + 12,
         expectedRnValue: 25,
       ),
-      // Post-indexing, Imm offset
+      // No indexing, scaled register offset.
+      new TestCase(
+        iw: 0xe7910102,
+        asm: "ldr  r0, [r1, r2, lsl #2]",
+        initRegisters: (gprs) {
+          gprs[1] = 3; // Initial base register value.
+          gprs[2] = 4; // Shift register value.
+        },
+        rn: 1,
+        expectedAddress: 3 + (4 << 2),
+        expectedRnValue: 3,
+      ),
+      // Post-indexing, immediate offset.
       new TestCase(
         asm: "ldrb  r3, [r1], #15",
         iw: 0xe4d1300f,
         initRegisters: (gprs) {
-          gprs[1] = 15; // Initial base-register value.
+          gprs[1] = 15; // Initial base register value.
         },
         rn: 1,
         expectedAddress: 15,
-        expectedRnValue: 30,
+        expectedRnValue: 15 + 15,
       ),
-      // Post-indexing, Reg offset, offset=17
+      // Post-indexing, register offset.
       new TestCase(
-        asm: "ldrb	r1, [r0], r6",
+        asm: "ldrb  r1, [r0], r6",
         iw: 0xe6d01006,
         initRegisters: (gprs) {
-          gprs[0] = 3; // Initial base-register value.
+          gprs[0] = 3; // Initial base register value.
           gprs[6] = 17; // Offset register value.
         },
         rn: 0,
         expectedAddress: 3,
-        expectedRnValue: 20,
+        expectedRnValue: 3 + 17,
       ),
-      // new TestCase(
-      //   iw: 0xe5cc001f,
-      //   asm: "strb  r0, [r12, #31]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
-      // new TestCase(
-      //   iw: 0xe5ca0000,
-      //   asm: "strb  r0, [r10]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
-      // new TestCase(
-      //   iw: 0xe5901000,
-      //   asm: "ldr  r1, [r0]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
-      // new TestCase(
-      //   iw: 0xe590200c,
-      //   asm: "ldr  r2, [r0, #12]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
-      // new TestCase(
-      //   iw: 0xe5801000,
-      //   asm: "str  r1, [r0]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
-      // new TestCase(
-      //   iw: 0xe5831000,
-      //   asm: "str  r1, [r3]",
-      //   initRegisters: (gprs) => null,
-      //   rn: null,
-      //   expectedAddress: null,
-      //   expectedRnValue: null,
-      // ),
+      // Post indexing, scaled register offset.
+      new TestCase(
+        iw: 0xe6910122,
+        asm: "ldr  r0, [r1], r2, lsr #2",
+        initRegisters: (gprs) {
+          gprs[1] = 3; // Initial base register value.
+          gprs[2] = 4; // Shift register value.
+        },
+        rn: 1,
+        expectedAddress: 3,
+        expectedRnValue: 3 + (4 >> 2),
+      ),
+      // Pre-indexing, immediate offset.
+      new TestCase(
+        asm: "str  r0, [r12, #31]!",
+        iw: 0xe5ac001f,
+        initRegisters: (gprs) {
+          gprs[12] = 2; // Initial base register value.
+        },
+        rn: 12,
+        expectedAddress: 2 + 31,
+        expectedRnValue: 2 + 31,
+      ),
+      // Pre-indexing, register offset.
+      new TestCase(
+        iw: 0xe7ea0001,
+        asm: "strb  r0, [r10, r1]!",
+        initRegisters: (gprs) {
+          gprs[10] = 5; // Initial base register value.
+          gprs[1] = 11; // Offset register value.
+        },
+        rn: 10,
+        expectedAddress: 5 + 11,
+        expectedRnValue: 5 + 11,
+      ),
     ].forEach((testCase) {
       // ignore: non_constant_identifier_names
       final PUBWL =
