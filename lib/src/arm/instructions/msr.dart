@@ -1,12 +1,6 @@
 part of arm7_tdmi.src.arm.compiler;
 
 abstract class _ArmInstruction$AbstractMSR extends Instruction {
-  // Bit mask constants defined in Table A4-1, under MSR instruction docs.
-  static const _unallocMask = 0x0FFFFF00;
-  static const _userMask = 0xF0000000;
-  static const _privMask = 0x0000000F;
-  static const _stateMask = 0x00000020;
-
   /// True iff the SPSR is to be written.  Otherwise the CPSR is to be written.
   final bool spsr;
 
@@ -21,23 +15,20 @@ abstract class _ArmInstruction$AbstractMSR extends Instruction {
       : super._(condition: condition, name: 'MSR');
 
   int abstractExecute(Cpu cpu, int operand, int cycleCount) {
-    String printWordB(int i) => i.toRadixString(2).padLeft(32, '0');
-    String printWordH(int i) => i.toRadixString(16).padLeft(8, '0');
-
-    int a = fieldMask & 0x1;
+    int mask = getBit(fieldMask, 0);
     if (!cpu.mode.isPrivileged) {
-      a = 0;
+      mask = 0;
     }
     if (spsr && cpu.mode.hasSpsr) {
-      if (a == 0) {
+      if (mask == 0) {
         int t = cpu.spsr;
         t &= ~0xF0000000;
         t |= (operand & 0xF0000000);
         operand = t;
       }
-      cpu.loadSpsr(operand);
+      cpu.spsr = operand;
     } else {
-      if (a == 0) {
+      if (mask == 0) {
         int z = cpu.cpsr.value;
         z &= ~0xF0000000;
         z |= (operand & 0xF0000000);

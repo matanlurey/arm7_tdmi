@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:func/func.dart';
 import 'package:meta/meta.dart';
@@ -194,8 +193,7 @@ class Cpu {
 
   /// SPSR. TODO: Should not be writable
   int get spsr => _bankedRegisters[mode]['spsr']; //_registers.spsr(mode);
-
-  void loadSpsr(int value) {
+  set spsr(int value) {
     if (this.mode == Mode.usr || this.mode == Mode.sys) {
       return; // Unpredictable as per spec.
     }

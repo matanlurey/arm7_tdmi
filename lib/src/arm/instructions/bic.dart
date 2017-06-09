@@ -32,9 +32,4 @@ class _ArmInstruction$BIC extends Instruction {
     }
     return 1;
   }
-
-  @override
-  String toDebugString() {
-    // TODO
-  }
 }
