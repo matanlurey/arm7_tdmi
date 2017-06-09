@@ -80,6 +80,9 @@ import 'package:meta/meta.dart';
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
 class Cpu {
+  // Index for banked register spsr.
+  static const _bankedSpsr = -1;
+
   // ignore: strong_mode_implicit_dynamic_parameter
   static int _unsupportedRead(_) {
     throw new UnsupportedError('No execution supported');
@@ -111,45 +114,36 @@ class Cpu {
   /// mode.  Registers R13 and R14 have six banked physical registers each. One
   /// is used in User and System modes, and each of the remaining five is used
   /// in one of the five exception modes.
-  final _bankedRegisters = <Mode, Map<String, int>>{
+  final _bankedRegisters = <Mode, Map<int, int>>{
     Mode.usr: {
-      '8': 0,
-      '9': 0,
-      '10': 0,
-      '11': 0,
-      '12': 0,
-      '13': 0,
-      '14': 0,
+      8: 0,
+      9: 0,
+      10: 0,
+      11: 0,
+      12: 0,
+      13: 0,
+      14: 0,
     },
-    Mode.fiq: {
-      '8': 0,
-      '9': 0,
-      '10': 0,
-      '11': 0,
-      '12': 0,
-      '13': 0,
-      '14': 0,
-      'spsr': 0
-    },
+    Mode.fiq: {8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, _bankedSpsr: 0},
     Mode.irq: {
-      '13': 0,
-      '14': 0,
-      'spsr': 0,
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
     },
     Mode.svc: {
-      '13': 0,
-      '14': 0,
-      'spsr': 0,
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
     },
     Mode.abt: {
-      '13': 0,
-      '14': 0,
-      'spsr': 0,
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
     },
     Mode.und: {
-      '13': 0,
-      '14': 0,
-      'spsr': 0,
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
     }
   };
 
@@ -191,13 +185,13 @@ class Cpu {
   /// CPSR.
   Psr get cpsr => _registers.cpsr;
 
-  /// SPSR. TODO: Should not be writable
-  int get spsr => _bankedRegisters[mode]['spsr']; //_registers.spsr(mode);
+  /// The SPSR bits for the current [mode].
+  int get spsr => _bankedRegisters[mode][_bankedSpsr]; //_registers.spsr(mode);
   set spsr(int value) {
     if (this.mode == Mode.usr || this.mode == Mode.sys) {
       return; // Unpredictable as per spec.
     }
-    _bankedRegisters[mode]['spsr'] = value;
+    _bankedRegisters[mode][_bankedSpsr] = value;
   }
 
   /// Whether the CPU is currently executing as ARM.
@@ -318,31 +312,34 @@ class Cpu {
   /// Read a word from the program at [pc].
   int read32(int pc) => _read32(pc);
 
+  /// Loads the [cpsr] from [bits].
+  ///
+  /// Current [gprs] values are written to the current [mode]'s banked
+  /// registers.  If the new mode has access to [spsr], the current [cpsr] is
+  /// saved to the new mode's banked SPSR register.
   void loadCpsr(int bits) {
     final newCpsr = new Psr.bits(bits);
     if (newCpsr.isThumbState) {
       throw new UnsupportedError('THUMB mode');
     }
     // System mode shares the same registers as User mode.
-    final currentMode = mode == Mode.sys ? Mode.usr : mode;
+    final oldMode = mode == Mode.sys ? Mode.usr : mode;
     final newMode = newCpsr.mode == Mode.sys ? Mode.usr : newCpsr.mode;
 
     // Bank current registers and load banked registers of new mode.
-    if (currentMode != newMode) {
-      final old = _bankedRegisters[currentMode];
-      final _new = _bankedRegisters[newMode];
+    if (oldMode != newMode) {
+      final oldRegs = _bankedRegisters[oldMode];
+      final newRegs = _bankedRegisters[newMode];
 
-      for (var reg in _new.keys) {
-        if (reg == 'spsr') {
-          // FIXME: is CPSR always automatically banked to SPSR of new mode or
-          // only when a mode switch occurs as part of an exception.
-          _new[reg] = cpsr.value;
+      for (var reg in newRegs.keys) {
+        if (reg == _bankedSpsr) {
+          newRegs[reg] = cpsr.value;
           continue;
         }
-        if (old.containsKey(reg)) {
-          old[reg] = gprs[int.parse(reg)];
+        if (oldRegs.containsKey(reg)) {
+          oldRegs[reg] = gprs[reg];
         }
-        gprs[int.parse(reg)] = _new[reg];
+        gprs[reg] = newRegs[reg];
       }
     }
 
