@@ -37,33 +37,6 @@ abstract class _ArmInstruction$AbstractMSR extends Instruction {
       cpu.loadCpsr(operand);
     }
 
-//    final byteMask = 0 |
-//        (isSet(fieldMask, 0) ? 0x000000FF : 0) |
-//        (isSet(fieldMask, 1) ? 0x0000FF00 : 0) |
-//        (isSet(fieldMask, 2) ? 0x00FF0000 : 0) |
-//        (isSet(fieldMask, 3) ? 0xFF000000 : 0);
-//    int mask;
-//    if (!spsr) {
-//      if (cpu.mode.isPrivileged) {
-//        if (!isZero(operand & _stateMask)) {
-//          /* unpredictable */
-//          return cycleCount;
-//        } else {
-//          mask = byteMask & (_userMask | _privMask);
-//        }
-//      } else {
-//        mask = byteMask & _userMask;
-//      }
-//      cpu.loadCpsr((cpu.cpsr.value & ~mask) | (operand & mask));
-//    } else {
-//      // spsr == true
-//      if (cpu.mode.hasSpsr) {
-//        mask = byteMask & (_userMask | _privMask | _stateMask);
-//        cpu.spsr.value = (cpu.spsr.value & ~mask) | (operand & mask);
-//      } else {
-//        /* Unpredictable */
-//      }
-//    }
     return cycleCount;
   }
 }
