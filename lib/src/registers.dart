@@ -59,7 +59,7 @@ class Registers {
   // ignore: constant_identifier_names
   static const PC = 15;
 
-  /// Offset values for a given operating [Mode].
+  /// Offset values for exception modes (modes that have SPSR).
   @visibleForTesting
   static const offsets = const {
     Mode.fiq: 17,
@@ -115,12 +115,16 @@ class Registers {
 
   /// Represents the CPSR.
   Psr get cpsr => _cpsr;
+  set cpsr(Psr value) {
+    _cpsr = value;
+  }
 
   /// Returns a flags register represents the SPSR for the processor.
   ///
   /// The returned instance differs depending on the [Psr.mode] in [cpsr].
   ///
   /// Some modes cannot access the SPSR, so a [StateError] is thrown.
+  /// TODO: Consider deleting.
   Psr get spsr {
     final offset = offsets[cpsr.mode];
     assert(offset != null, 'Cannot access the SPSR as ${cpsr.mode}');
@@ -255,6 +259,18 @@ class Mode {
 
   @override
   String toString() => '$Mode {$identifier}';
+
+  /// Whether this [Mode] is privileged.
+  ///
+  /// Instructions running in privileged mode have full access to system
+  /// resources and can change mode freely. All except [usr] are privileged
+  /// modes.
+  bool get isPrivileged => this != usr;
+
+  /// Whether instructions executing in this mode have access to the SPSR.
+  ///
+  /// All modes except [usr] and [sys] have access to the SPSR.
+  bool get hasSpsr => this != usr && this != sys;
 }
 
 /// Utility class around reading and writing flags to the CPSR/SPSR.
@@ -413,8 +429,9 @@ class Psr {
   }
 
   /// Sets the current operating mode.
-  set mode(Mode mode) {
-    _write(_read() | mode.bits);
+  set mode(Mode value) {
+    // Unset bits 0-4 before setting the new mode bits.
+    _write((_read() & ~(0x1F)) | value.bits);
     assert(mode != null);
   }
 

@@ -121,4 +121,51 @@ void main() {
     final address = cpu.gprs[14] - 8;
     expect(rom[address ~/ 4], abortInst);
   });
+
+  test('taking nFIQ input HIGH should raise an FIQ Exception', () {
+    final rom = createRom([
+      0xe10f1000, // mrs r1, CPSR
+      0xe3c11040, // bic r1, r1, #64
+      0xe121f001, // msr CPSR_c, r1
+
+      // Some random instructions
+      0xe0a15003, // adc  r5, r1, r3
+      0xe280001a, // add  r0, r0, #26
+      0xe1510000, // cmp  r1, r0
+    ]);
+
+    final cpu = new Cpu.noExecution(read32: (a) {
+      assert(a % 4 == 0);
+      return rom[a ~/ 4];
+    })
+      ..step(); // Reset branch.
+
+    expect(cpu.pc, resetLabel);
+    // CPU mode should be 'supervisor' and FIQ interrupts disabled.
+    expect(cpu.mode, Mode.svc);
+    expect(cpu.isFiqDisabled, true);
+
+    for (int i = 0; i < 3; i++) {
+      cpu.step();
+    }
+    // FIQ interrupts should now be enabled.
+    expect(cpu.isFiqDisabled, false);
+
+    // Execute some instruction and then take nFIQ input LOW.
+    cpu
+      ..step()
+      ..inputFIQ = false;
+
+    // Next step should result in FIQ trap being taken.
+    final fiqVector = 0x0000001C;
+
+    cpu.step();
+    expect(cpu.pc, fiqVector);
+    expect(cpu.mode, Mode.fiq);
+
+    // FIQ exception should have disabled FIQ interrupts.
+    expect(cpu.cpsr.f, true);
+    // IRQs should also be disabled.
+    expect(cpu.cpsr.i, true);
+  });
 }
