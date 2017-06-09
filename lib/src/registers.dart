@@ -124,12 +124,11 @@ class Registers {
   /// The returned instance differs depending on the [Psr.mode] in [cpsr].
   ///
   /// Some modes cannot access the SPSR, so a [StateError] is thrown.
-  Psr spsr(Mode mode) {
-    final offset = offsets[mode];
-    if (offset == null) {
-      throw new StateError('Cannot access the SPSR as ${mode}');
-    }
-    return new Psr.view(_buffer, offset + mode.size);
+  /// TODO: Consider deleting.
+  Psr get spsr {
+    final offset = offsets[cpsr.mode];
+    assert(offset != null, 'Cannot access the SPSR as ${cpsr.mode}');
+    return new Psr.view(_buffer, offset + cpsr.mode.size);
   }
 
   /// Program counter (R15).
@@ -431,6 +430,7 @@ class Psr {
 
   /// Sets the current operating mode.
   set mode(Mode value) {
+    // Unset bits 0-4 before setting the new mode bits.
     _write((_read() & ~(0x1F)) | value.bits);
     assert(mode != null);
   }

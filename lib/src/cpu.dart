@@ -195,7 +195,7 @@ class Cpu {
   Psr get cpsr => _registers.cpsr;
 
   /// The SPSR bits for the current [mode].
-  int get spsr => _bankedRegisters[mode][_bankedSpsr]; //_registers.spsr(mode);
+  int get spsr => _bankedRegisters[mode][_bankedSpsr];
   set spsr(int value) {
     if (this.mode == Mode.usr || this.mode == Mode.sys) {
       return; // Unpredictable as per spec.
