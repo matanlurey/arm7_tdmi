@@ -506,10 +506,7 @@ class MoveToStatusRegisterFormat extends ArmInstructionFormat {
   /// True iff the SPSR is to be written.  Otherwise the CPSR is to be written.
   bool get spsr => _set(22);
 
-  /// First operand register.
-  ///
-  /// field_mask for immediate control instructions. rn for register control
-  /// instruction.
+  // TODO: document.
   int get fieldMask => _range(19, 16);
 
   /// Destination register.
