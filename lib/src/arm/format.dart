@@ -494,6 +494,55 @@ class LoadStoreFormat extends ArmInstructionFormat {
   int get rd => _range(15, 12);
 }
 
+@visibleForTesting
+class MoveToStatusRegisterFormat extends ArmInstructionFormat {
+  @literal
+  const MoveToStatusRegisterFormat(int instruction) : super._(instruction);
+
+  /// True iff the instruction writes an immediate value to the status register.
+  /// Otherwise a register value is written to the status register.
+  bool get i => _set(25);
+
+  /// True iff the SPSR is to be written.  Otherwise the CPSR is to be written.
+  bool get spsr => _set(22);
+
+  /// First operand register.
+  ///
+  /// field_mask for immediate control instructions. rn for register control
+  /// instruction.
+  int get fieldMask => _range(19, 16);
+
+  /// Destination register.
+  int get rd => _range(15, 12);
+}
+
+/// Format for MSR instruction with immediate operand.
+@visibleForTesting
+class ImmediateMoveToStatusRegisterFormat extends MoveToStatusRegisterFormat {
+  @literal
+  const ImmediateMoveToStatusRegisterFormat(int instruction)
+      : super(instruction);
+
+  /// Rotation immediate.
+  int get rotation => _range(11, 8);
+
+  /// Immediate to rotate.
+  int get immediate => _range(7, 0);
+}
+
+/// Format for MSR instruction with register operand.
+@visibleForTesting
+class RegisterMoveToStatusRegisterFormat extends MoveToStatusRegisterFormat {
+  @literal
+  const RegisterMoveToStatusRegisterFormat(int instruction)
+      : super(instruction);
+
+  //  Ignore op1, rs and op2 until needed.
+
+  /// Immediate to rotate.
+  int get rm => _range(3, 0);
+}
+
 /// Instruction format for Software Interrupt.
 ///
 /// ```

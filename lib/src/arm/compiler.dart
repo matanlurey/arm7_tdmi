@@ -125,13 +125,18 @@ class ArmCompiler {
   /// ```
   /// MSR{cond} CPSR{field}, Rm
   /// ```
-  Instruction createMSR({
+  Instruction createMSRRegister({
     ArmCondition cond: ArmCondition.AL,
-    bool spsr: false,
-    @required int field,
+    @required bool spsr,
+    @required int fieldMask,
     @required int rm,
   }) =>
-      new _ArmInstruction$MSR(condition: cond);
+      new _ArmInstruction$MSRRegister(
+        condition: cond,
+        spsr: spsr,
+        fieldMask: fieldMask,
+        rm: rm,
+      );
 
   /// Creates a _MSR_ (move immediate) instruction:
   ///
@@ -146,10 +151,18 @@ class ArmCompiler {
   /// ```
   Instruction createMSRImmediate({
     ArmCondition cond: ArmCondition.AL,
-    bool spsr: false,
-    @required int imm,
+    @required bool spsr,
+    @required int fieldMask,
+    @required int rotation,
+    @required int immediate,
   }) =>
-      new _ArmInstruction$MSR(condition: cond);
+      new _ArmInstruction$MSRImmediate(
+        condition: cond,
+        spsr: spsr,
+        fieldMask: fieldMask,
+        rotation: rotation,
+        immediate: immediate,
+      );
 
   // Arithmetic ================================================================
 
@@ -481,12 +494,18 @@ class ArmCompiler {
   /// ```
   Instruction createBIC({
     ArmCondition cond: ArmCondition.AL,
-    bool s: false,
+    @required bool cpsr,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$BIC(condition: cond);
+      new _ArmInstruction$BIC(
+        condition: cond,
+        cpsr: cpsr,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   // Branch ====================================================================
 

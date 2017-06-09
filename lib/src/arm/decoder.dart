@@ -1,4 +1,5 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 import 'package:binary/binary.dart' hide bit;
@@ -64,12 +65,39 @@ class ArmDecoder {
 
   /// See Figure A3-4 of the official ARM docs.
   Instruction _decodeMiscellaneous(int iw) {
-    // FIXME: Create and use format here.
-    if (bitRange(iw, 27, 23) == 0x6 ||
-        (bitRange(iw, 27, 23) == 0x2 && bitRange(iw, 7, 4) == 0x0)) {
-      return _compiler.createMSR(cond: null, spsr: null, field: null, rm: null);
-    } else if (bitRange(iw, 27, 20) == 0x12) {
-      return _compiler.createBX(cond: null, operand: null);
+    final format = new MoveToStatusRegisterFormat(iw);
+
+    if (format.i || (bitRange(iw, 21, 20) == 2 && bitRange(iw, 7, 4) == 0x0)) {
+      // MSR
+      if (format.i) {
+        final immFormat = new ImmediateMoveToStatusRegisterFormat(iw);
+        return _compiler.createMSRImmediate(
+          cond: immFormat.cond,
+          spsr: immFormat.spsr,
+          fieldMask: immFormat.fieldMask,
+          rotation: immFormat.rotation,
+          immediate: immFormat.immediate,
+        );
+      } else {
+        final regFormat = new RegisterMoveToStatusRegisterFormat(iw);
+        return _compiler.createMSRRegister(
+          cond: regFormat.cond,
+          spsr: regFormat.spsr,
+          fieldMask: regFormat.fieldMask,
+          rm: regFormat.rm,
+        );
+      }
+    } else if (bitRange(iw, 21, 20) == 0 && bitRange(iw, 7, 4) == 0) {
+      return _compiler.createMRS(
+        cond: format.cond,
+        spsr: format.spsr,
+        rd: format.rd,
+      );
+    } else if (bitRange(iw, 21, 20) == 0x2) {
+      return _compiler.createBX(
+        cond: null,
+        operand: null,
+      );
     }
     return _undefined(iw);
   }
@@ -222,10 +250,10 @@ class ArmDecoder {
       case 0xE:
         return _compiler.createBIC(
           cond: format.cond,
-          s: format.s,
+          cpsr: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // MVN
       case 0xF:
