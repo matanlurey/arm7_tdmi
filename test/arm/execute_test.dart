@@ -102,7 +102,8 @@ void main() {
         throw MemoryException.badAddress;
       }
       return rom[a ~/ 4];
-    })..step(); // Reset branch.
+    })
+      ..step(); // Reset branch.
 
     expect(cpu.pc, resetLabel);
     cpu.step();
@@ -136,7 +137,8 @@ void main() {
     final cpu = new Cpu.noExecution(read32: (a) {
       assert(a % 4 == 0);
       return rom[a ~/ 4];
-    })..step(); // Reset branch.
+    })
+      ..step(); // Reset branch.
 
     expect(cpu.pc, resetLabel);
     // CPU mode should be 'supervisor' and FIQ interrupts disabled.
