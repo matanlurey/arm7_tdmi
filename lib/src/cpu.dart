@@ -80,6 +80,10 @@ import 'package:meta/meta.dart';
 /// * CPU switches to ARM state when executing an exception
 /// * User switches back to old state when leaving an exception
 class Cpu {
+  // Index for banked register spsr.
+  static const _bankedSpsr = -1;
+
+  // ignore: strong_mode_implicit_dynamic_parameter
   static int _unsupportedRead(_) {
     throw new UnsupportedError('No execution supported');
   }
@@ -88,6 +92,69 @@ class Cpu {
   final Registers _registers;
   final Func1<int, int> _read16;
   final Func1<int, int> _read32;
+
+  /// The FIQ input.
+  ///
+  /// An FIQ is generated externally by taking the [inputFIQ] LOW (false).
+  bool inputFIQ = true;
+
+  /// The IRQ input.
+  ///
+  /// An IRQ is generated externally by taking [inputIRQ] LOW (false).
+  bool inputIRQ = true;
+
+  /// The banked registers of the different operating modes.
+  ///
+  /// Banked registers are discrete physical registers in the core that are
+  /// mapped to the available registers depending on the current processor
+  /// operating mode.
+  ///
+  /// Registers R8 to R12 have two banked physical registers each. One is used
+  /// in all processor modes other than FIQ mode, and the other is used in FIQ
+  /// mode.  Registers R13 and R14 have six banked physical registers each. One
+  /// is used in User and System modes, and each of the remaining five is used
+  /// in one of the five exception modes.
+  final _bankedRegisters = <Mode, Map<int, int>>{
+    Mode.usr: {
+      8: 0,
+      9: 0,
+      10: 0,
+      11: 0,
+      12: 0,
+      13: 0,
+      14: 0,
+    },
+    Mode.fiq: {
+      8: 0,
+      9: 0,
+      10: 0,
+      11: 0,
+      12: 0,
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
+    },
+    Mode.irq: {
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
+    },
+    Mode.svc: {
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
+    },
+    Mode.abt: {
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
+    },
+    Mode.und: {
+      13: 0,
+      14: 0,
+      _bankedSpsr: 0,
+    }
+  };
 
   factory Cpu({
     ArmDecoder decoder: const ArmDecoder(),
@@ -127,8 +194,14 @@ class Cpu {
   /// CPSR.
   Psr get cpsr => _registers.cpsr;
 
-  /// SPSR.
-  Psr get spsr => _registers.spsr;
+  /// The SPSR bits for the current [mode].
+  int get spsr => _bankedRegisters[mode][_bankedSpsr];
+  set spsr(int value) {
+    if (this.mode == Mode.usr || this.mode == Mode.sys) {
+      return; // Unpredictable as per spec.
+    }
+    _bankedRegisters[mode][_bankedSpsr] = value;
+  }
 
   /// Whether the CPU is currently executing as ARM.
   bool get isArm => _registers.cpsr.isArmState;
@@ -166,8 +239,7 @@ class Cpu {
     newCpsr.isArmState = true;
 
     // Switch CPU to respective mode and save the old CPSR to SPSR of new mode.
-    spsr.value = cpsr.value;
-    cpsr.value = newCpsr.value;
+    loadCpsr(newCpsr.value);
 
     // Preserve the address of the next instruction in the appropriate LR.
     // The current PC value is 8 bytes ahead of the instruction currently being
@@ -234,9 +306,9 @@ class Cpu {
         cycles--;
       }
       // Check for FIQ and IRQ exceptions.
-      if (!isFiqDisabled && !cpsr.f) {
+      if (!inputFIQ && !cpsr.f) {
         raise(ArmException.fiq);
-      } else if (!isIrqDisabled && !cpsr.i) {
+      } else if (!inputIRQ && !cpsr.i) {
         raise(ArmException.irq);
       }
     }
@@ -248,4 +320,38 @@ class Cpu {
 
   /// Read a word from the program at [pc].
   int read32(int pc) => _read32(pc);
+
+  /// Loads the [cpsr] from [bits].
+  ///
+  /// Current [gprs] values are written to the current [mode]'s banked
+  /// registers.  If the new mode has access to [spsr], the current [cpsr] is
+  /// saved to the new mode's banked SPSR register.
+  void loadCpsr(int bits) {
+    final newCpsr = new Psr.bits(bits);
+    if (newCpsr.isThumbState) {
+      throw new UnsupportedError('THUMB mode');
+    }
+    // System mode shares the same registers as User mode.
+    final oldMode = mode == Mode.sys ? Mode.usr : mode;
+    final newMode = newCpsr.mode == Mode.sys ? Mode.usr : newCpsr.mode;
+
+    // Bank current registers and load banked registers of new mode.
+    if (oldMode != newMode) {
+      final oldRegs = _bankedRegisters[oldMode];
+      final newRegs = _bankedRegisters[newMode];
+
+      for (var reg in newRegs.keys) {
+        if (reg == _bankedSpsr) {
+          newRegs[reg] = cpsr.value;
+          continue;
+        }
+        if (oldRegs.containsKey(reg)) {
+          oldRegs[reg] = gprs[reg];
+        }
+        gprs[reg] = newRegs[reg];
+      }
+    }
+
+    _registers.cpsr = newCpsr;
+  }
 }

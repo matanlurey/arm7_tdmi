@@ -142,7 +142,7 @@ void main() {
     // ldrb r3, [r1], #1
     const Tuple2<int, String>(
       0xe4d13001,
-      'LDR',
+      'LDRB',
     ),
     // andeq r0, r0, r8, asr r0
     const Tuple2<int, String>(

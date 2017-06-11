@@ -15,13 +15,12 @@ void main() {
     final cpu = new TracedCpu(
       read16: (a) => rom[a ~/ 4],
       read32: (a) => rom[a ~/ 4],
-    );
-    cpu.step();
+    )..step();
     expect(cpu.pc, resetLabel);
     for (var i = 0; i < 3; i++) {
       cpu.step();
     }
-    var expected = new Psr.bits(cpu.cpsr.value)
+    final expected = new Psr.bits(cpu.cpsr.value)
       ..n = false
       ..z = true
       ..c = true
@@ -56,8 +55,8 @@ void main() {
 
   test('Undefined instruction trap should be triggered', () {
     final rom = createRom([0xFF000000 /* Undefined Instruction */]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
+    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step(); // Execute undefined instruction.
     expect(
@@ -73,8 +72,8 @@ void main() {
 
   test('Software interrupt should raise a SWI exception', () {
     final rom = createRom([0xEF00000F]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
+    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4])
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     cpu.step();
 
@@ -86,7 +85,7 @@ void main() {
     expect(cpu.mode, Mode.svc);
 
     // R14_svc - 4 should be address of the SWI instruction.
-    var address = cpu.gprs[14] - 4;
+    final address = cpu.gprs[14] - 4;
     expect(rom[address ~/ 4], 0xEF00000F);
   });
 
@@ -97,13 +96,19 @@ void main() {
       abortInst, // ldr r1, [r0]
       0x12345678, // embedded constant for ldr r0 instruction
     ]);
-    final cpu = new Cpu.noExecution(read32: (a) => rom[a ~/ 4]);
-    cpu.step(); // Reset branch.
-    expect(cpu.pc, resetLabel);
+    final cpu = new Cpu.noExecution(read32: (a) {
+      assert(a % 4 == 0);
+      if (a >= rom.length * 4) {
+        throw MemoryException.badAddress;
+      }
+      return rom[a ~/ 4];
+    })
+      ..step(); // Reset branch.
 
-    /*
-    // R0 should contain 0x12345678 now.
+    expect(cpu.pc, resetLabel);
     cpu.step();
+
+    // R0 should contain 0x12345678 now.
     expect(cpu.gprs[0], 0x12345678);
 
     // Trying to read from memory address 0x12345678 should raise a data-abort.
@@ -115,6 +120,52 @@ void main() {
     // Instruction that caused the abort should be at R14_abt - 8.
     final address = cpu.gprs[14] - 8;
     expect(rom[address ~/ 4], abortInst);
-    */
+  });
+
+  test('taking nFIQ input HIGH should raise an FIQ Exception', () {
+    final rom = createRom([
+      0xe10f1000, // mrs r1, CPSR
+      0xe3c11040, // bic r1, r1, #64
+      0xe121f001, // msr CPSR_c, r1
+
+      // Some random instructions
+      0xe0a15003, // adc  r5, r1, r3
+      0xe280001a, // add  r0, r0, #26
+      0xe1510000, // cmp  r1, r0
+    ]);
+
+    final cpu = new Cpu.noExecution(read32: (a) {
+      assert(a % 4 == 0);
+      return rom[a ~/ 4];
+    })
+      ..step(); // Reset branch.
+
+    expect(cpu.pc, resetLabel);
+    // CPU mode should be 'supervisor' and FIQ interrupts disabled.
+    expect(cpu.mode, Mode.svc);
+    expect(cpu.isFiqDisabled, true);
+
+    for (int i = 0; i < 3; i++) {
+      cpu.step();
+    }
+    // FIQ interrupts should now be enabled.
+    expect(cpu.isFiqDisabled, false);
+
+    // Execute some instruction and then take nFIQ input LOW.
+    cpu
+      ..step()
+      ..inputFIQ = false;
+
+    // Next step should result in FIQ trap being taken.
+    final fiqVector = 0x0000001C;
+
+    cpu.step();
+    expect(cpu.pc, fiqVector);
+    expect(cpu.mode, Mode.fiq);
+
+    // FIQ exception should have disabled FIQ interrupts.
+    expect(cpu.cpsr.f, true);
+    // IRQs should also be disabled.
+    expect(cpu.cpsr.i, true);
   });
 }

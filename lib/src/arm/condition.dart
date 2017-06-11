@@ -46,51 +46,67 @@ abstract class ArmCondition {
   };
 
   /// Equal (Z set).
+  // ignore: constant_identifier_names
   static const ArmCondition EQ = const _ArmCondition$EQ();
 
   /// Not equal (Z cleared).
+  // ignore: constant_identifier_names
   static const ArmCondition NE = const _ArmCondition$NE();
 
   /// Unsigned higher, or same (C set).
+  // ignore: constant_identifier_names
   static const ArmCondition CS = const _ArmCondition$CS();
 
   /// Unsigned lower (C cleared).
+  // ignore: constant_identifier_names
   static const ArmCondition CC = const _ArmCondition$CC();
 
   /// Negative (N set).
+  // ignore: constant_identifier_names
   static const ArmCondition MI = const _ArmCondition$MI();
 
   /// Positive, or zero (N clear).
+  // ignore: constant_identifier_names
   static const ArmCondition PL = const _ArmCondition$PL();
 
   /// Overflow (V set).
+  // ignore: constant_identifier_names
   static const ArmCondition VS = const _ArmCondition$VS();
 
   /// No overflow (V cleared).
+  // ignore: constant_identifier_names
   static const ArmCondition VC = const _ArmCondition$VC();
 
   /// Unsigned higher (C set, Z clear).
+  // ignore: constant_identifier_names
   static const ArmCondition HI = const _ArmCondition$HI();
 
   /// Unsigned lower, or same (C clear, Z set).
+  // ignore: constant_identifier_names
   static const ArmCondition LS = const _ArmCondition$LS();
 
   /// Greater, or equal (N=V; N V set or N and V clear).
+  // ignore: constant_identifier_names
   static const ArmCondition GE = const _ArmCondition$GE();
 
   /// Less than (N<>V; N set V clear or N clear V set).
+  // ignore: constant_identifier_names
   static const ArmCondition LT = const _ArmCondition$LT();
 
   /// Greater than (Z clear, N=V; N V set or N V clear).
+  // ignore: constant_identifier_names
   static const ArmCondition GT = const _ArmCondition$GT();
 
   /// Less than, or equal (Z set or N<>V; N set V clear or N clear V set).
+  // ignore: constant_identifier_names
   static const ArmCondition LE = const _ArmCondition$LE();
 
   /// Always (flag ignored).
+  // ignore: constant_identifier_names
   static const ArmCondition AL = const _ArmCondition$AL();
 
   /// Undefined (instruction ignored).
+  // ignore: constant_identifier_names
   static const ArmCondition NV = const _ArmCondition$NV();
 
   /// Returns an [ArmCondition] instance for the provided [opcode].

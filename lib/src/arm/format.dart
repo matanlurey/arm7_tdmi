@@ -1,5 +1,6 @@
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 
 import 'condition.dart';
 
@@ -463,16 +464,25 @@ class CoprocessorRegisterFormat extends ArmInstructionFormat {
 ///
 /// **INTERNAL ONLY**: Used for decoding.
 @visibleForTesting
-class LoadAndStoreFormat extends ArmInstructionFormat {
+class LoadStoreFormat extends ArmInstructionFormat {
   @literal
-  const LoadAndStoreFormat(int instruction) : super._(instruction);
+  const LoadStoreFormat(int instruction) : super._(instruction);
 
-  // FIXME: Add getters for IPUBW.
-  // FIXME: Add getters for addressing mode specific bits.
+  /// Together with [w], determines the indexing type of an instruction's
+  /// address computation. See [AddressingMode2] for full documentation.X
+  bool get p => _set(24);
+
+  /// True iff this instruction's address is computed as an addtion of two
+  /// values.  Otherwise it is a subtraction.
+  bool get u => _set(23);
 
   /// True iff the instruction is an unsigned byte access. Else it is a word
   /// access.
   bool get b => _set(22);
+
+  /// Together with [p], determines the indexing type of this instruction's
+  /// address computation. See [AddressingMode2] for full documentation.X
+  bool get w => _set(21);
 
   /// True iff the instruction is a load. Else it is a store.
   bool get l => _set(20);
@@ -482,6 +492,52 @@ class LoadAndStoreFormat extends ArmInstructionFormat {
 
   /// The register whose contents are to be loaded or stored.
   int get rd => _range(15, 12);
+}
+
+@visibleForTesting
+class MoveToStatusRegisterFormat extends ArmInstructionFormat {
+  @literal
+  const MoveToStatusRegisterFormat(int instruction) : super._(instruction);
+
+  /// True iff the instruction writes an immediate value to the status register.
+  /// Otherwise a register value is written to the status register.
+  bool get i => _set(25);
+
+  /// True iff the SPSR is to be written.  Otherwise the CPSR is to be written.
+  bool get spsr => _set(22);
+
+  // TODO: document.
+  int get fieldMask => _range(19, 16);
+
+  /// Destination register.
+  int get rd => _range(15, 12);
+}
+
+/// Format for MSR instruction with immediate operand.
+@visibleForTesting
+class ImmediateMoveToStatusRegisterFormat extends MoveToStatusRegisterFormat {
+  @literal
+  const ImmediateMoveToStatusRegisterFormat(int instruction)
+      : super(instruction);
+
+  /// Rotation immediate.
+  int get rotation => _range(11, 8);
+
+  /// Immediate to rotate.
+  int get immediate => _range(7, 0);
+}
+
+/// Format for MSR instruction with register operand.
+@visibleForTesting
+class RegisterMoveToStatusRegisterFormat extends MoveToStatusRegisterFormat {
+  @literal
+  const RegisterMoveToStatusRegisterFormat(int instruction)
+      : super(instruction);
+
+  //  Ignore op1, rs and op2 until needed.
+
+  /// Immediate to rotate.
+  int get rm => _range(3, 0);
 }
 
 /// Instruction format for Software Interrupt.

@@ -1,5 +1,7 @@
 import 'package:arm7_tdmi/arm7_tdmi.dart';
+import 'package:arm7_tdmi/src/arm/format.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 import 'package:binary/binary.dart' hide bit;
 import 'package:bit_pattern/bit_pattern.dart';
 
@@ -20,7 +22,7 @@ class ArmDecoder {
   Instruction decode(int iw) {
     assert(uint32.inRange(iw), 'Requires a 32-bit input');
 
-    var encoding = _Encodings.matcher.match(iw);
+    final encoding = _Encodings.matcher.match(iw);
     if (encoding == _Encodings.undefined) {
       return _undefined(iw);
     } else if (encoding == _Encodings.swi) {
@@ -45,60 +47,57 @@ class ArmDecoder {
   }
 
   Instruction _decodeLoadStore(int iw) {
-    /*
-      FIXME:
-      - LDRH Load halfword
-      - LDRSB Load signed byte
-      - LDRSH Load signed halfword
-      - LDM Load multiple
-      - STRB Store byte
-      - STRH Store halfword
-      - STM Store multiple
-     */
-    var format = new LoadAndStoreFormat(iw);
-    if (format.b) {
-      if (format.l) {
-        return _compiler.createLDRByte(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      } else {
-        return _compiler.createSTRByte(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      }
-    } else {
-      if (format.l) {
-        return _compiler.createLDRWord(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      } else {
-        return _compiler.createSTRWord(
-          cond: format.cond,
-          user: null,
-          rd: null,
-          aMode: null,
-        );
-      }
-    }
+    final format = new LoadStoreFormat(iw);
+    return format.l
+        ? _compiler.createLDR(
+            cond: format.cond,
+            isByte: format.b,
+            rd: format.rd,
+            address: AddressingMode2.decodeAddress(iw),
+          )
+        : _compiler.createSTR(
+            cond: format.cond,
+            user: null,
+            rd: null,
+            aMode: null,
+          );
   }
 
   /// See Figure A3-4 of the official ARM docs.
   Instruction _decodeMiscellaneous(int iw) {
-    // FIXME: Create and use format here.
-    if (bitRange(iw, 27, 23) == 0x6 ||
-        (bitRange(iw, 27, 23) == 0x2 && bitRange(iw, 7, 4) == 0x0)) {
-      return _compiler.createMSR(cond: null, spsr: null, field: null, rm: null);
-    } else if (bitRange(iw, 27, 20) == 0x12) {
-      return _compiler.createBX(cond: null, operand: null);
+    final format = new MoveToStatusRegisterFormat(iw);
+
+    if (format.i || (bitRange(iw, 21, 20) == 2 && bitRange(iw, 7, 4) == 0x0)) {
+      // MSR
+      if (format.i) {
+        final immFormat = new ImmediateMoveToStatusRegisterFormat(iw);
+        return _compiler.createMSRImmediate(
+          cond: immFormat.cond,
+          spsr: immFormat.spsr,
+          fieldMask: immFormat.fieldMask,
+          rotation: immFormat.rotation,
+          immediate: immFormat.immediate,
+        );
+      } else {
+        final regFormat = new RegisterMoveToStatusRegisterFormat(iw);
+        return _compiler.createMSRRegister(
+          cond: regFormat.cond,
+          spsr: regFormat.spsr,
+          fieldMask: regFormat.fieldMask,
+          rm: regFormat.rm,
+        );
+      }
+    } else if (bitRange(iw, 21, 20) == 0 && bitRange(iw, 7, 4) == 0) {
+      return _compiler.createMRS(
+        cond: format.cond,
+        spsr: format.spsr,
+        rd: format.rd,
+      );
+    } else if (bitRange(iw, 21, 20) == 0x2) {
+      return _compiler.createBX(
+        cond: null,
+        operand: null,
+      );
     }
     return _undefined(iw);
   }
@@ -251,10 +250,10 @@ class ArmDecoder {
       case 0xE:
         return _compiler.createBIC(
           cond: format.cond,
-          s: format.s,
+          cpsr: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // MVN
       case 0xF:
@@ -269,6 +268,7 @@ class ArmDecoder {
     throw new ArgumentError('Could not decode opcode 0x${hexOp}');
   }
 
+  // ignore: strong_mode_implicit_dynamic_parameter
   Instruction _undefined(_) => const _Undefined();
 
   Instruction _decodeBranches(int iw) {
@@ -285,7 +285,7 @@ class ArmDecoder {
 
 abstract class _Encodings {
   /// Data processing instruction.
-  static final dataProcessing = new BitPattern([
+  static final dataProcessing = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -301,7 +301,7 @@ abstract class _Encodings {
   ]);
 
   /// Undefined instruction.
-  static final undefined = new BitPattern([
+  static final undefined = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -315,7 +315,7 @@ abstract class _Encodings {
   ]);
 
   /// Miscellaneous.
-  static final misc = new BitPattern([
+  static final misc = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -332,7 +332,7 @@ abstract class _Encodings {
   ]);
 
   /// Multiplies and extra loads/stores
-  static final multiplies = new BitPattern([
+  static final multiplies = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -345,7 +345,7 @@ abstract class _Encodings {
   ]);
 
   /// Move immediate to status register.
-  static final moveImmediate = new BitPattern([
+  static final moveImmediate = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     0, // 26
@@ -362,7 +362,7 @@ abstract class _Encodings {
   ]);
 
   /// Load/store immediate/register offset.
-  static final loadStoreOffset = new BitPattern([
+  static final loadStoreOffset = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -381,7 +381,7 @@ abstract class _Encodings {
   ]);
 
   /// Media instructions.
-  static final media = new BitPattern([
+  static final media = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -392,7 +392,7 @@ abstract class _Encodings {
   ]);
 
   /// Architecturally undefined.
-  static final archUndefined = new BitPattern([
+  static final archUndefined = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     0, // 27
     1, // 26
@@ -411,7 +411,7 @@ abstract class _Encodings {
   ]);
 
   /// Load/Store multiple.
-  static final loadStoreMultiple = new BitPattern([
+  static final loadStoreMultiple = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     0, // 26
@@ -426,7 +426,7 @@ abstract class _Encodings {
   ]);
 
   /// Branch and branch with link.
-  static final branches = new BitPattern([
+  static final branches = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     0, // 26
@@ -436,7 +436,7 @@ abstract class _Encodings {
   ]);
 
   /// Coprocessor load/store and double register transfers.
-  static final coprocessorLoadsStores = new BitPattern([
+  static final coprocessorLoadsStores = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -453,7 +453,7 @@ abstract class _Encodings {
   ]);
 
   /// Coprocessor data processing and coprocessor register transfers.
-  static final coprocessorDataRegister = new BitPattern([
+  static final coprocessorDataRegister = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -470,7 +470,7 @@ abstract class _Encodings {
   ]);
 
   /// Software interrupt.
-  static final swi = new BitPattern([
+  static final swi = new BitPattern(<dynamic>[
     nibble('cond'), // 31 - 28
     1, // 27
     1, // 26
@@ -480,7 +480,7 @@ abstract class _Encodings {
   ]);
 
   /// Unconditional instructions.
-  static final unconditional = new BitPattern([
+  static final unconditional = new BitPattern(<dynamic>[
     1, // 31
     1, // 30
     1, // 29

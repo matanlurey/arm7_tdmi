@@ -106,10 +106,10 @@ abstract class AddressingMode2 {
     int offset;
 
     switch (shift) {
-      case 0: // LSR
-        offset = gprs[rn] << shiftImmediate;
+      case 0: // LSL
+        offset = gprs[rm] << shiftImmediate;
         break;
-      case 1: // LSL
+      case 1: // LSR
         offset = shiftImmediate == 0 ? 0 : gprs[rm] >> shiftImmediate;
         break;
       case 2: // ASR
@@ -157,7 +157,7 @@ abstract class AddressingMode2 {
     @required AddressComputation address,
     @required int rn,
   }) {
-    var addr = cpu.gprs[rn];
+    final addr = cpu.gprs[rn];
     cpu.gprs[rn] = address(cpu);
     return addr;
   }

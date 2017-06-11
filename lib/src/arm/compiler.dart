@@ -2,6 +2,7 @@ library arm7_tdmi.src.arm.compiler;
 
 import 'package:arm7_tdmi/arm7_tdmi.dart';
 import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_1.dart';
+import 'package:arm7_tdmi/src/arm/addressing_modes/addressing_mode_2.dart';
 import 'package:arm7_tdmi/src/helpers.dart';
 import 'package:binary/binary.dart';
 import 'package:meta/meta.dart';
@@ -124,13 +125,18 @@ class ArmCompiler {
   /// ```
   /// MSR{cond} CPSR{field}, Rm
   /// ```
-  Instruction createMSR({
+  Instruction createMSRRegister({
     ArmCondition cond: ArmCondition.AL,
-    bool spsr: false,
-    @required int field,
+    @required bool spsr,
+    @required int fieldMask,
     @required int rm,
   }) =>
-      new _ArmInstruction$MSR(condition: cond);
+      new _ArmInstruction$MSRRegister(
+        condition: cond,
+        spsr: spsr,
+        fieldMask: fieldMask,
+        rm: rm,
+      );
 
   /// Creates a _MSR_ (move immediate) instruction:
   ///
@@ -145,10 +151,18 @@ class ArmCompiler {
   /// ```
   Instruction createMSRImmediate({
     ArmCondition cond: ArmCondition.AL,
-    bool spsr: false,
-    @required int imm,
+    @required bool spsr,
+    @required int fieldMask,
+    @required int rotation,
+    @required int immediate,
   }) =>
-      new _ArmInstruction$MSR(condition: cond);
+      new _ArmInstruction$MSRImmediate(
+        condition: cond,
+        spsr: spsr,
+        fieldMask: fieldMask,
+        rotation: rotation,
+        immediate: immediate,
+      );
 
   // Arithmetic ================================================================
 
@@ -480,12 +494,18 @@ class ArmCompiler {
   /// ```
   Instruction createBIC({
     ArmCondition cond: ArmCondition.AL,
-    bool s: false,
+    @required bool cpsr,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$BIC(condition: cond);
+      new _ArmInstruction$BIC(
+        condition: cond,
+        cpsr: cpsr,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   // Branch ====================================================================
 
@@ -534,68 +554,36 @@ class ArmCompiler {
 
   // Load ======================================================================
 
-  /// Creates a _LDR_ (word) instruction.
+  /// Creates a _LDR_ instruction.
   ///
   /// Assembly syntax:
   /// ```
   /// LDR{cond} Rd, <a_mode2>
   /// ```
   ///
+  /// TODO: Account for CPU mode and signed-ness.
+  ///
   /// Assembly syntax for user-mode privilege:
   /// ```
   /// LDR{cond}T Rd, <a_mode2P>
-  /// ```
-  Instruction createLDRWord({
-    ArmCondition cond: ArmCondition.AL,
-    bool user: false,
-    @required int rd,
-    @required int aMode,
-  }) =>
-      new _ArmInstruction$LDR(condition: cond);
-
-  /// Creates a _LDR_ (byte) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDR{cond}B Rd, <a_mode2>
-  /// ```
-  ///
-  /// Assembly syntax for user-mode privilege:
-  /// ```
-  /// LDR{cond}BT Rd, <a_mode2P>
   /// ```
   ///
   /// Assembly syntax for signed:
   /// ```
   /// LDR{cond}SB Rd, <a_mode3>
   /// ```
-  Instruction createLDRByte({
+  Instruction createLDR({
     ArmCondition cond: ArmCondition.AL,
-    bool user: false,
-    bool signed: false,
     @required int rd,
-    @required int aMode,
+    @required bool isByte,
+    @required AddressComputation address,
   }) =>
-      new _ArmInstruction$LDR(condition: cond);
-
-  /// Creates a _LDR_ (half-word) instruction.
-  ///
-  /// Assembly syntax:
-  /// ```
-  /// LDR{cond}H Rd, <a_mode3>
-  /// ```
-  ///
-  /// Assembly syntax for signed:
-  /// ```
-  /// LDR{cond}SH Rd, <a_mode3>
-  /// ```
-  Instruction createLDRHalfWord({
-    ArmCondition cond: ArmCondition.AL,
-    bool signed: false,
-    @required int rd,
-    @required int aMode,
-  }) =>
-      new _ArmInstruction$LDR(condition: cond);
+      new _ArmInstruction$LDR(
+        condition: cond,
+        isByte: isByte,
+        rd: rd,
+        address: address,
+      );
 
   /// Create a _LDR_ (load multiple) instruction.
   ///
@@ -624,7 +612,7 @@ class ArmCompiler {
   /// ```
   /// STR{cond}T Rd, <a_mode2P>
   /// ```
-  Instruction createSTRWord({
+  Instruction createSTR({
     ArmCondition cond: ArmCondition.AL,
     bool user: false,
     @required int rd,
@@ -643,7 +631,7 @@ class ArmCompiler {
   /// ```
   /// STR{cond}BT Rd, <a_mode2P>
   /// ```
-  Instruction createSTRByte({
+  Instruction createSTRB({
     ArmCondition cond: ArmCondition.AL,
     bool user: false,
     @required int rd,
