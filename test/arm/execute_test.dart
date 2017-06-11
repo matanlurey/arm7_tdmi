@@ -183,9 +183,9 @@ void main() {
     final cpu = new Cpu.noExecution(read32: (a) {
       assert(a % 4 == 0);
       return rom[a ~/ 4];
-    });
+    })
+      ..step(); // Reset branch.
 
-    cpu.step(); // Reset branch.
     expect(cpu.pc, resetLabel);
 
     // CPU mode should be 'supervisor' and IRQ + FIQ interrupts disabled.
@@ -202,11 +202,12 @@ void main() {
     expect(cpu.cpsr.f, false);
 
     // Execute some instruction and then take nIRQ input LOW.
-    cpu.step();
-    cpu.inputIRQ = false;
+    cpu
+      ..step()
+      ..inputIRQ = false;
 
     // Next step should result in IRQ trap being taken.
-    var irqVector = 0x00000018;
+    final irqVector = 0x00000018;
     cpu.step();
     expect(cpu.pc, irqVector);
     expect(cpu.mode, Mode.irq);
@@ -239,9 +240,8 @@ void main() {
     final cpu = new Cpu.noExecution(read32: (a) {
       expect(a % 4, 0);
       return rom[a ~/ 4];
-    });
-
-    cpu.step(); // Reset branch.
+    })
+      ..step(); // Reset branch.
     expect(cpu.pc, resetLabel);
     // Cpu starts up in 'supervisor' mode.
     expect(cpu.mode, Mode.svc);

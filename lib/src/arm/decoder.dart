@@ -143,7 +143,7 @@ class ArmDecoder {
           s: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // SUB
       case 0x2:
@@ -151,9 +151,8 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          // ???
-          op1: format.rn,
-          op2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // RSB
       case 0x3:
@@ -161,8 +160,8 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          op1: format.rn,
-          op2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // ADD
       case 0x4:
@@ -181,7 +180,7 @@ class ArmDecoder {
           s: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // SBC
       case 0x6:
@@ -189,8 +188,8 @@ class ArmDecoder {
           cond: format.cond,
           s: format.s,
           rd: format.rd,
-          op1: format.rn,
-          op2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // RSC
       case 0x7:
@@ -199,35 +198,35 @@ class ArmDecoder {
           s: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // TST
       case 0x8:
         return _compiler.createTST(
           cond: format.cond,
-          rd: format.rd,
-          oprnd2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // TEQ
       case 0x9:
         return _compiler.createTEQ(
           cond: format.cond,
-          rd: format.rd,
-          oprnd2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // CMP
       case 0xA:
         return _compiler.createCMP(
           cond: format.cond,
-          rd: format.rd,
-          oprnd2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // CMN
       case 0xB:
         return _compiler.createCMN(
           cond: format.cond,
-          rd: format.rd,
-          oprnd2: format.operand2,
+          rn: format.rn,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // ORR
       case 0xC:
