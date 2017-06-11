@@ -7,7 +7,7 @@ import 'package:meta/meta.dart';
 /// The 16 ARM7/TDMI General Purpose Registers (Non-banked registers).
 class Registers {
   // Total size required to represent the registers.
-  static final int _totalSize = Mode.modes.values.fold(0, (l, m) => l + m.size);
+  static final int _totalSize = 16;
 
   /// Stack pointer index.
   @visibleForTesting
@@ -28,7 +28,7 @@ class Registers {
 
   /// Create a new empty register set with a pre-specified operating [mode].
   factory Registers({Mode mode: Mode.svc}) {
-    final buffer = new Uint32List(16 * Uint32List.BYTES_PER_ELEMENT);
+    final buffer = new Uint32List(_totalSize * Uint32List.BYTES_PER_ELEMENT);
     final registers = new Registers.view(buffer);
     return registers;
   }
