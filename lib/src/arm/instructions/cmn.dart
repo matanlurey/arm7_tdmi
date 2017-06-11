@@ -26,7 +26,6 @@ class _ArmInstruction$CMN extends Instruction {
       ..z = isZero(op1)
       ..c = int32.hasCarryBit(opResult)
       ..v = int32.doesAddOverflow(op1, op2, opResult);
-
     return 1;
   }
 }

@@ -31,7 +31,14 @@ class _ArmInstruction$RSB extends Instruction {
     final storedResult = gprsWrite(cpu.gprs, rd, opResult);
 
     if (s) {
-      computePsr(cpu, rd, opResult, storedResult, op1, op2);
+      cpu.cpsr
+        ..n = int32.isNegative(storedResult)
+        ..z = isZero(storedResult)
+        // TODO: Investigate why `NOT BorrowFrom` function in arm docs is
+        // implemented this way in https://github.com/smiley22/ARM.JS/blob/\
+        // gh-pages/Simulator/Cpu.ts#L802
+        ..c = storedResult <= opResult
+        ..v = int32.doesSubOverflow(op1, op2, opResult);
     }
     return 1;
   }

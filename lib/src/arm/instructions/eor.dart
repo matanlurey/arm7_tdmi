@@ -1,9 +1,6 @@
 part of arm7_tdmi.src.arm.compiler;
 
 class _ArmInstruction$EOR extends Instruction {
-  /// Provides this instruction's second operand.
-  final Shifter shifter;
-
   /// Destination register.
   final int rd;
 
@@ -12,6 +9,9 @@ class _ArmInstruction$EOR extends Instruction {
 
   /// Determines whether the instruction updates the CPSR.
   final bool s;
+
+  /// Provides this instruction's second operand.
+  final Shifter shifter;
 
   const _ArmInstruction$EOR({
     @required ArmCondition condition,
