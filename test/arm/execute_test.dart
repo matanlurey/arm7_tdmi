@@ -169,7 +169,7 @@ void main() {
     expect(cpu.cpsr.i, true);
   });
 
-  test('IRQ exception should be reaised when taking the nIRQ input HIGH', () {
+  test('IRQ exception should be raised when taking the nIRQ input HIGH', () {
     final rom = createRom([
       0xe10f1000, // mrs r1, CPSR
       0xe3c110c0, // bic r1, r1, #0xC0
@@ -216,7 +216,7 @@ void main() {
     expect(cpu.cpsr.f, false);
   });
 
-  test('Switching processor modes should work as expected.', () {
+  test('switching processor modes should work as expected.', () {
     final rom = createRom([
       // Switch to System mode
       0xe10f3000, // mrs r3, CPSR
