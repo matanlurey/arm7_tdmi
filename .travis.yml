@@ -12,7 +12,7 @@ cache:
 
 # Check for analysis issues, run the test cases, and ensure `dartfmt` is run.
 dart_task:
-  - dartanalyzer
+  - dartanalyzer --fatal-warnings --fatal-hints --fatal-lints
   - pub run test -p vm
   - dartfmt
 
