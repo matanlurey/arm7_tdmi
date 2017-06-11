@@ -267,11 +267,6 @@ class Armv4tParser {
     return (eval(expression, lookup) as num).toInt();
   }
 
-  static final Pattern _preMatch = new RegExp(
-    r'^\[\s*(\w+)\s*,\s*(.*)\](!)?$',
-    caseSensitive: false,
-  );
-
   /// Parses an address.
   ///
   /// * [input]: String to parse an address from.
@@ -287,12 +282,7 @@ class Armv4tParser {
         pseudo: true,
       );
     }
-    final preMatches = _preMatch.matchAsPrefix(input);
-    if (preMatches.groupCount > 0) {
-      final type = ParsedAddressType.preIndexed;
-      final source = parseRegister(preMatches.group(1));
-      final writeBack = preMatches.groupCount > 2;
-    }
+    throw new UnimplementedError('Not implemented: parseAddress($input)');
   }
 }
 
