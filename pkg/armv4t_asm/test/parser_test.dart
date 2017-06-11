@@ -5,6 +5,11 @@ void main() {
   group('Arm4TParser', () {
     final parser = const Armv4tParser();
 
+    int nullLookup(String varName) {
+      fail('No variable ($varName) expected to be looekd up!');
+      return null;
+    }
+
     group('parseMnemonic', () {
       test('should parse a simple mnemonic', () {
         final result = parser.parseMnemonic('mov');
@@ -61,25 +66,28 @@ void main() {
 
     group('parseExpression', () {
       test('should parse an immediate value', () {
-        expect(parser.parseExpression('#101', (_) => null), 101);
+        expect(parser.parseExpression('#101', nullLookup), 101);
       });
 
       test('should parse an expression', () {
-        expect(parser.parseExpression('1 + 1', (_) => null), 2);
+        expect(parser.parseExpression('1 + 1', nullLookup), 2);
       });
 
       test('should parse an expression with variables', () {
         expect(
-            parser.parseExpression('A + B', (v) {
-              if (v == 'A') {
-                return 1;
-              }
-              if (v == 'B') {
-                return 2;
-              }
-            }),
-            3);
+          parser.parseExpression('A + B', (v) {
+            if (v == 'A') {
+              return 1;
+            }
+            if (v == 'B') {
+              return 2;
+            }
+          }),
+          3,
+        );
       });
     });
+
+    group('parseAddress', () {});
   });
 }

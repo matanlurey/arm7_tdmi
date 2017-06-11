@@ -257,12 +257,42 @@ class Armv4tParser {
 
   /// Parses an [expression].
   ///
+  /// * [lookup]: Variable lookup for expressions.
+  ///
   /// Returns the parsed and evaluated expression result.
   int parseExpression(String expression, int lookup(String variable)) {
     if (expression[0] == '#') {
       return int.parse(expression.substring(1));
     }
     return (eval(expression, lookup) as num).toInt();
+  }
+
+  static final Pattern _preMatch = new RegExp(
+    r'^\[\s*(\w+)\s*,\s*(.*)\](!)?$',
+    caseSensitive: false,
+  );
+
+  /// Parses an address.
+  ///
+  /// * [input]: String to parse an address from.
+  /// * [lookup]: Variable lookup for expressions.
+  ///
+  /// Returns a parsed address.
+  ParsedAddress parseAddress(String input, int lookup(String variable)) {
+    input = input.trim();
+    if (input[0] == '=') {
+      return new ParsedAddress(
+        type: ParsedAddressType.immediate,
+        offset: parseExpression(input.substring(1), lookup),
+        pseudo: true,
+      );
+    }
+    final preMatches = _preMatch.matchAsPrefix(input);
+    if (preMatches.groupCount > 0) {
+      final type = ParsedAddressType.preIndexed;
+      final source = parseRegister(preMatches.group(1));
+      final writeBack = preMatches.groupCount > 2;
+    }
   }
 }
 
@@ -286,4 +316,72 @@ class ParsedMnemonic {
   @override
   String toString() =>
       condition != null ? '$mnemonic${suffix ?? ''}: $condition' : mnemonic;
+}
+
+class ParsedAddress {
+  final ParsedAddressType type;
+  final int offset;
+  final bool pseudo;
+  final String source;
+  final bool writeBack;
+  final bool immediate;
+  final bool subtract;
+  final String shiftOp;
+  final int shift;
+
+  const ParsedAddress({
+    @required this.type,
+    this.offset,
+    this.pseudo,
+    this.source,
+    this.writeBack,
+    this.immediate,
+    this.subtract,
+    this.shiftOp,
+    this.shift,
+  });
+
+  @override
+  int get hashCode =>
+      type.hashCode ^
+      offset.hashCode ^
+      pseudo.hashCode ^
+      source.hashCode ^
+      writeBack.hashCode ^
+      immediate.hashCode ^
+      subtract.hashCode ^
+      shiftOp.hashCode ^
+      shift.hashCode;
+
+  @override
+  bool operator ==(Object o) =>
+      o is ParsedAddress &&
+      o.type == type &&
+      o.offset == offset &&
+      o.pseudo == pseudo &&
+      o.source == source &&
+      o.writeBack == writeBack &&
+      o.immediate == immediate &&
+      o.subtract == subtract &&
+      o.shiftOp == shiftOp &&
+      o.shift == shift;
+
+  @override
+  String toString() => {
+        'type': type,
+        'offset': offset,
+        'pseudo': pseudo,
+        'source': source,
+        'writeBack': writeBack,
+        'immediate': immediate,
+        'subtract': subtract,
+        'shiftOp': shiftOp,
+        'shift': shift,
+      }.toString();
+}
+
+enum ParsedAddressType {
+  immediate,
+  preIndexed,
+  postIndexed,
 }
