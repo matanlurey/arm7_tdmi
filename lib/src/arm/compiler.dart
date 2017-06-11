@@ -486,6 +486,7 @@ class ArmCompiler {
   }) =>
       new _ArmInstruction$ORR(
         condition: cond,
+        s: s,
         rd: rd,
         rn: rn,
         shifter: shifter,
