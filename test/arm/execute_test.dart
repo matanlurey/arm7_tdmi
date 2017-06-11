@@ -168,4 +168,100 @@ void main() {
     // IRQs should also be disabled.
     expect(cpu.cpsr.i, true);
   });
+
+  test('IRQ exception should be raised when taking the nIRQ input HIGH', () {
+    final rom = createRom([
+      0xe10f1000, // mrs r1, CPSR
+      0xe3c110c0, // bic r1, r1, #0xC0
+      0xe121f001, // msr CPSR_c, r1
+
+      // Some random instructions
+      0xe0a15003, // adc  r5, r1, r3
+      0xe280001a, // add  r0, r0, #26
+      0xe1510000 // cmp  r1, r0
+    ]);
+    final cpu = new Cpu.noExecution(read32: (a) {
+      assert(a % 4 == 0);
+      return rom[a ~/ 4];
+    });
+
+    cpu.step(); // Reset branch.
+    expect(cpu.pc, resetLabel);
+
+    // CPU mode should be 'supervisor' and IRQ + FIQ interrupts disabled.
+    expect(cpu.mode, Mode.svc);
+    expect(cpu.cpsr.i, true);
+    expect(cpu.cpsr.f, true);
+
+    for (var i = 0; i < 3; i++) {
+      cpu.step();
+    }
+
+    // IRQ + FIQ interrupts should now be enabled.
+    expect(cpu.cpsr.i, false);
+    expect(cpu.cpsr.f, false);
+
+    // Execute some instruction and then take nIRQ input LOW.
+    cpu.step();
+    cpu.inputIRQ = false;
+
+    // Next step should result in IRQ trap being taken.
+    var irqVector = 0x00000018;
+    cpu.step();
+    expect(cpu.pc, irqVector);
+    expect(cpu.mode, Mode.irq);
+    // IRQ exception should have disabled IRQ interrupts but FIQ interrupts
+    // should still be enabled.
+    expect(cpu.cpsr.i, true);
+    expect(cpu.cpsr.f, false);
+  });
+
+  test('switching processor modes should work as expected.', () {
+    final rom = createRom([
+      // Switch to System mode
+      0xe10f3000, // mrs r3, CPSR
+      0xe383301f, // orr r3, r3, #31
+      0xe129f003, // msr CPSR_fc, r3
+
+      // Switch to User mode
+      0xe10f3000, // mrs r3, CPSR
+      0xe3c3301f, // bic r3, r3, #31
+      0xe3833010, // orr r3, r3, #16
+      0xe129f003, // msr CPSR_fc, r3
+
+      // Switch to Supervisor mode
+      0xe10f3000, // mrs r3, CPSR
+      0xe3c3301f, // bic r3, r3, #31
+      0xe3833013, // orr r3, r3, #19
+      0xe129f003 // msr CPSR_fc, r3
+    ]);
+
+    final cpu = new Cpu.noExecution(read32: (a) {
+      expect(a % 4, 0);
+      return rom[a ~/ 4];
+    });
+
+    cpu.step(); // Reset branch.
+    expect(cpu.pc, resetLabel);
+    // Cpu starts up in 'supervisor' mode.
+    expect(cpu.mode, Mode.svc);
+
+    for (var i = 0; i < 3; i++) {
+      cpu.step();
+    }
+
+    expect(cpu.mode, Mode.sys);
+    for (var i = 0; i < 4; i++) {
+      cpu.step();
+    }
+
+    expect(cpu.mode, Mode.usr);
+    // Trying to switch from user mode to a privileged mode must not work,
+    // of course.
+    for (var i = 0; i < 4; i++) {
+      cpu.step();
+    }
+
+    expect(cpu.mode, Mode.usr);
+  });
 }

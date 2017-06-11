@@ -236,7 +236,7 @@ class ArmDecoder {
           s: format.s,
           rd: format.rd,
           rn: format.rn,
-          oprnd2: format.operand2,
+          shifter: AddressingMode1.decodeShifter(format.operand2, format.i),
         );
       // MOV
       case 0xD:
