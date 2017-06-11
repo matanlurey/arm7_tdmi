@@ -12,3 +12,6 @@ environment:
 
 dependencies:
   meta: ^1.0.5
+
+dev_dependencies:
+  test: '^0.12.18+1'
