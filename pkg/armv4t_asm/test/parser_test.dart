@@ -26,7 +26,7 @@ void main() {
         expect(result.suffix, isNull);
         expect(result.condition, 'GT');
       });
-      
+
       test('should parse a mnemomic with a suffix and condition', () {
         final result = parser.parseMnemonic('sublts');
         expect(result.mnemonic, 'SUB');
@@ -69,14 +69,16 @@ void main() {
       });
 
       test('should parse an expression with variables', () {
-        expect(parser.parseExpression('A + B', (v) {
-          if (v == 'A') {
-            return 1;
-          }
-          if (v == 'B') {
-            return 2;
-          }
-        }), 3);
+        expect(
+            parser.parseExpression('A + B', (v) {
+              if (v == 'A') {
+                return 1;
+              }
+              if (v == 'B') {
+                return 2;
+              }
+            }),
+            3);
       });
     });
   });
