@@ -482,9 +482,15 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$ORR(condition: cond);
+      new _ArmInstruction$ORR(
+        condition: cond,
+        s: s,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   /// Creates a _BIC_ instruction.
   ///
