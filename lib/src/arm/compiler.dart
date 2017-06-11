@@ -198,14 +198,14 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$ADC(
         condition: cond,
-        rd: rd,
-        op1: rn,
-        op2: oprnd2,
         s: s,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
       );
 
   /// Creates a _SUB_ (subtract) instruction.
@@ -218,15 +218,15 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op1,
-    @required int op2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$SUB(
         condition: cond,
         s: s,
         rd: rd,
-        op1: op1,
-        op2: op2,
+        rn: rn,
+        shifter: shifter,
       );
 
   /// Creates a _SBC_ (subtract with carry) instruction.
@@ -260,15 +260,15 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op1,
-    @required int op2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$RSB(
         condition: cond,
         s: s,
         rd: rd,
-        op1: op1,
-        op2: op2,
+        rn: rn,
+        shifter: shifter,
       );
 
   /// Creates a _RSC_ (subtract reverse subtract with carry) instruction.
@@ -389,10 +389,14 @@ class ArmCompiler {
   /// ```
   Instruction createCMP({
     ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required int oprnd2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$CMP(condition: cond);
+      new _ArmInstruction$CMP(
+        condition: cond,
+        rn: rn,
+        shifter: shifter,
+      );
 
   /// Creates a _CMN_ (compare negative) instruction.
   ///
@@ -402,10 +406,14 @@ class ArmCompiler {
   /// ```
   Instruction createCMN({
     ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required int oprnd2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$CMN(condition: cond);
+      new _ArmInstruction$CMN(
+        condition: cond,
+        rn: rn,
+        shifter: shifter,
+      );
 
   // Logical ===================================================================
 
@@ -417,10 +425,10 @@ class ArmCompiler {
   /// ```
   Instruction createTST({
     ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required int oprnd2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$TST(condition: cond);
+      new _ArmInstruction$TST(condition: cond, rn: rn, shifter: shifter);
 
   /// Creates a _TEQ_ (test equivalence) instruction.
   ///
@@ -430,10 +438,10 @@ class ArmCompiler {
   /// ```
   Instruction createTEQ({
     ArmCondition cond: ArmCondition.AL,
-    @required int rd,
-    @required int oprnd2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$TEQ(condition: cond);
+      new _ArmInstruction$TEQ(condition: cond, rn: rn, shifter: shifter);
 
   /// Creates a _AND_ instruction.
   ///
@@ -467,9 +475,15 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$EOR(condition: cond);
+      new _ArmInstruction$EOR(
+        condition: cond,
+        s: s,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   /// Creates a _ORR_ instruction.
   ///
@@ -482,9 +496,15 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$ORR(condition: cond);
+      new _ArmInstruction$ORR(
+        condition: cond,
+        s: s,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   /// Creates a _BIC_ instruction.
   ///
