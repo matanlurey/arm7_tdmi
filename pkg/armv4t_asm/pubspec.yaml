@@ -1,0 +1,14 @@
+name: armv4t_asm
+description: >
+  Assembler for the ARMv4T CPU Architecture.
+version: 0.0.0
+authors:
+  - Matan Lurey <matan@lurey.org>
+  - Kendal Harland <kendaljharland@gmail.com>
+homepage: https://github.com/matanlurey/arm7_tdmi/tree/master/pkg/armv4t_asm
+
+environment:
+  sdk: '>=1.22.0 <2.0.0'
+
+dependencies:
+  meta: ^1.0.5
