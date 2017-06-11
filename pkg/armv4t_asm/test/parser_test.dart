@@ -34,5 +34,50 @@ void main() {
         expect(result.condition, 'LT');
       });
     });
+
+    group('parseRegister', () {
+      test('should parse a register < 10', () {
+        expect(parser.parseRegister('R1'), 'R1');
+      });
+
+      test('should parse a register >= 10', () {
+        expect(parser.parseRegister('R12'), 'R12');
+      });
+
+      test('should parse an aliased register', () {
+        expect(parser.parseRegister('PC'), 'R15');
+      });
+    });
+
+    group('parseCpRegister', () {
+      test('should parse a register < 10', () {
+        expect(parser.parseCpRegister('C1'), 'C1');
+      });
+
+      test('should parse a register >= 10', () {
+        expect(parser.parseCpRegister('C12'), 'C12');
+      });
+    });
+
+    group('parseExpression', () {
+      test('should parse an immediate value', () {
+        expect(parser.parseExpression('#101', (_) => null), 101);
+      });
+
+      test('should parse an expression', () {
+        expect(parser.parseExpression('1 + 1', (_) => null), 2);
+      });
+
+      test('should parse an expression with variables', () {
+        expect(parser.parseExpression('A + B', (v) {
+          if (v == 'A') {
+            return 1;
+          }
+          if (v == 'B') {
+            return 2;
+          }
+        }), 3);
+      });
+    });
   });
 }

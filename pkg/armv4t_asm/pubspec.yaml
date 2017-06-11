@@ -11,6 +11,8 @@ environment:
   sdk: '>=1.22.0 <2.0.0'
 
 dependencies:
+  func: ^1.0.0
+  math_expressions: '>=0.2.0 <0.4.0'
   meta: ^1.0.5
 
 dev_dependencies:

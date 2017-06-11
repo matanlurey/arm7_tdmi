@@ -1,5 +1,7 @@
 import 'package:meta/meta.dart';
 
+import 'evaluate.dart';
+
 /// Operation codes implemented by the ARMv4T Architecture.
 ///
 /// _See ARM7TDMI-S Data Sheet, Chapter 4 (ARM Instruction Set)._
@@ -150,7 +152,11 @@ class Armv4tParser {
 
   const Armv4tParser();
 
-  /// Parses the mnemonic and condition field from the [input] string.
+  /// Parses a mnemonic and condition field from the [input] string.
+  ///
+  /// * [input]: String to parse the mnemonic, condition, and suffix from.
+  ///
+  /// Returns a [ParsedMnemonic] object.
   ParsedMnemonic parseMnemonic(String input) {
     final line = input.replaceAll('\t', ' ').trim().split(' ');
     final mnemonic = _parseMnemonic(line[0]);
@@ -164,7 +170,7 @@ class Armv4tParser {
     input = input.toUpperCase();
     _sortedMnemonics ??= _sortedByLength(_mnemonics);
     return _sortedMnemonics.firstWhere((m) => input.startsWith(m),
-        orElse: () => throw new StateError('Invalid mnemonic: $input'));
+        orElse: () => throw new StateError('Invalid mnemonic: "$input"'));
   }
 
   // Returns the suffix, if any, of a mnemonic of an instruction.
@@ -182,7 +188,7 @@ class Armv4tParser {
       }
     }
     if (info.isRequired) {
-      throw new StateError('Expected suffix: $input');
+      throw new StateError('Expected suffix: "$input"');
     } else {
       return null;
     }
@@ -197,6 +203,66 @@ class Armv4tParser {
       }
     }
     return null;
+  }
+
+  /// Parses an ARM register identifier from the specified [input].
+  ///
+  /// * [input]: String to parse the ARM register identifier from.
+  ///
+  /// Returns an ARM register identifier (R0 to R15).
+  String parseRegister(String input) {
+    input = input.trim().toUpperCase();
+    const alias = const {
+      'FP': 'R11',
+      'SP': 'R13',
+      'LR': 'R14',
+      'PC': 'R15',
+    };
+    if (input.length == 2) {
+      if (input[0] == 'R' &&
+          int.parse(input[1], onError: (_) => null) != null) {
+        return input;
+      }
+      final aliased = alias[input];
+      if (aliased != null) {
+        return aliased;
+      }
+    } else if (input.length == 3) {
+      if (input[0] == 'R' && input[1] == '1' && int.parse(input[2]) < 6) {
+        return input;
+      }
+    }
+    throw new FormatException('Unexpected ARM register identifier: "$input"');
+  }
+
+  /// Parses an ARM co-processor register identifier from the specified [input].
+  ///
+  /// * [input]: String to parse the ARM register identifier from.
+  ///
+  /// Returns an ARM co-processor register identifier (R0 to R15).
+  String parseCpRegister(String input) {
+    input = input.trim().toUpperCase();
+    if (input.length == 2) {
+      if (input[0] == 'C' &&
+          int.parse(input[1], onError: (_) => null) != null) {
+        return input;
+      }
+    } else if (input.length == 3) {
+      if (input[0] == 'C' && input[1] == '1' && int.parse(input[2]) < 6) {
+        return input;
+      }
+    }
+    throw new FormatException('Unexpcted ARM coprocessor identifier: "$input"');
+  }
+
+  /// Parses an [expression].
+  ///
+  /// Returns the parsed and evaluated expression result.
+  int parseExpression(String expression, int lookup(String variable)) {
+    if (expression[0] == '#') {
+      return int.parse(expression.substring(1));
+    }
+    return (eval(expression, lookup) as num).toInt();
   }
 }
 
