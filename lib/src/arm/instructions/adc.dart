@@ -28,16 +28,12 @@ class _ArmInstruction$ADC extends Instruction {
     final shiftValues = shifter(cpu);
     final op1 = cpu.gprs[rn];
     final op2 = shiftValues.operand;
-    final carryBit = cpu.cpsr.c ? 1 : 0;
+    final carryBit = btoi(cpu.cpsr.c);
     final opResult = op1.toUnsigned(32) + op2.toSigned(32) + carryBit;
     final storedResult = gprsWrite(cpu.gprs, rd, opResult);
 
     if (s) {
-      cpu.cpsr
-        ..n = int32.isNegative(storedResult)
-        ..z = isZero(opResult)
-        ..c = int32.hasCarryBit(opResult)
-        ..v = int32.doesAddOverflow(rn, op2 + carryBit, opResult);
+      computePsr(cpu, rd, opResult, opResult, op1, op2 + carryBit);
     }
     return 1;
   }

@@ -19,8 +19,8 @@ class _ArmInstruction$CMP extends Instruction {
     final shiftValues = shifter(cpu);
     final op1 = cpu.gprs[rn];
     final op2 = shiftValues.operand;
-
     final opResult = op1.toUnsigned(32) - op2.toUnsigned(32);
+
     cpu.cpsr
       ..n = int32.isNegative(opResult)
       ..z = isZero(opResult)

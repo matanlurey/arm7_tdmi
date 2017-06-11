@@ -23,8 +23,8 @@ class _ArmInstruction$CMN extends Instruction {
 
     cpu.cpsr
       ..n = int32.isNegative(opResult)
-      ..z = isZero(op1)
-      ..c = int32.hasCarryBit(opResult)
+      ..z = isZero(opResult)
+      ..c = uint32.hasCarryBit(opResult)
       ..v = int32.doesAddOverflow(op1, op2, opResult);
     return 1;
   }

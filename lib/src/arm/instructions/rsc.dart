@@ -27,12 +27,16 @@ class _ArmInstruction$RSC extends Instruction {
     final shiftValues = shifter(cpu);
     final op1 = cpu.gprs[rn];
     final op2 = shiftValues.operand;
-    final notCarryBit = ~(cpu.cpsr.c ? 1 : 0);
+    final notCarryBit = ~btoi(cpu.cpsr.c);
     final opResult = op2.toUnsigned(32) - op1.toUnsigned(32) - notCarryBit;
     final storedResult = gprsWrite(cpu.gprs, rd, opResult);
 
     if (s) {
-      computePsr(cpu, rd, opResult, storedResult, op1, op2);
+      cpu.cpsr
+        ..n = int32.isNegative(opResult)
+        ..z = isZero(opResult)
+        ..c = opResult <= op1
+        ..v = int32.doesSubOverflow(op1, op2 - notCarryBit, opResult);
     }
     return 1;
   }

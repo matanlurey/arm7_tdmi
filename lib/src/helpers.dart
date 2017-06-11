@@ -4,6 +4,9 @@ import 'package:binary/binary.dart';
 import 'cpu.dart' show Cpu;
 import 'registers.dart' show Registers;
 
+/// TODO: Move to package:binary
+int btoi(bool value) => value ? 1 : 0;
+
 /// A helper function for writing [value] to [register] in [gprs].
 ///
 /// Returns the result after being stored.
