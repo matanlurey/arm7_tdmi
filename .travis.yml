@@ -19,6 +19,10 @@ dart_task:
 # If we're successful this far, then report coverage information to coveralls.
 after_script: dart tool/coverage.dart
 
+# Only building master means that we don't run two builds for each pull request.
+branches:
+  only: [master]
+
 # The Dart language is constantly being worked on, and sometimes the dev and
 # stable builds don't agree on what is considered formatted or what is analysis
 # warning free (though this does not effect _using_ the library, likely).
