@@ -239,15 +239,15 @@ class ArmCompiler {
     ArmCondition cond: ArmCondition.AL,
     bool s: false,
     @required int rd,
-    @required int op1,
-    @required int op2,
+    @required int rn,
+    @required Shifter shifter,
   }) =>
       new _ArmInstruction$SBC(
         condition: cond,
         s: s,
         rd: rd,
-        op1: op1,
-        op2: op2,
+        rn: rn,
+        shifter: shifter,
       );
 
   /// Creates a _RSB_ (subtract reverse subtract) instruction.
@@ -282,9 +282,15 @@ class ArmCompiler {
     bool s: false,
     @required int rd,
     @required int rn,
-    @required int oprnd2,
+    @required Shifter shifter,
   }) =>
-      new _ArmInstruction$RSC(condition: cond);
+      new _ArmInstruction$RSC(
+        condition: cond,
+        s: s,
+        rd: rd,
+        rn: rn,
+        shifter: shifter,
+      );
 
   /// Creates a _MUL_ (multiply) instruction.
   ///

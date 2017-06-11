@@ -84,7 +84,6 @@ class _ArmInstruction$MSRRegister extends _ArmInstruction$AbstractMSR {
   })
       : super(condition: condition, spsr: spsr, fieldMask: fieldMask);
 
-  // TODO: Delete unpredictable blocks once tests passing.
   @override
   int execute(Cpu cpu) {
     final operand = cpu.gprs[rm];

@@ -93,6 +93,11 @@ class Cpu {
   final Func1<int, int> _read16;
   final Func1<int, int> _read32;
 
+  /// The current program status registers.
+  ///
+  /// These are accessible from any processor mode.
+  Psr _cpsr;
+
   /// The FIQ input.
   ///
   /// An FIQ is generated externally by taking the [inputFIQ] LOW (false).
@@ -114,6 +119,43 @@ class Cpu {
   /// mode.  Registers R13 and R14 have six banked physical registers each. One
   /// is used in User and System modes, and each of the remaining five is used
   /// in one of the five exception modes.
+  /// There's a total of 37 registers (32bit), 31 general registers (`Rxx`) and
+  ///
+  /// Comparing these registers to the psuedocode in the official ARM docs:
+  ///
+  /// 6 status registers (`xPSR`). Note that only some resisters are "banked",
+  /// for example each mode has it's own `R14` register: called `R14`, `R14_fiq`,
+  /// `R14_svc1, etc. for each mode respectively
+  ///
+  /// However, other registers are not banked, for example, each mode is using the
+  /// same `R0` register, so writing to `R0` will always affect the content of
+  /// `R0` in other modes also.
+  ///
+  /// ```txt
+  /// System/User     FIQ         Supervisor     Abort     IRQ      Undefined
+  /// -----------------------------------------------------------------------
+  /// R0              R0          R0             R0        R0       R0
+  /// R1              R1          R1             R1        R1       R1
+  /// R2              R2          R2             R2        R2       R2
+  /// R3              R3          R3             R3        R3       R3
+  /// R4              R4          R4             R4        R4       R4
+  /// R5              R5          R5             R5        R5       R5
+  /// R6              R6          R6             R6        R6       R6
+  /// R7              R7          R7             R7        R7       R7
+  /// -----------------------------------------------------------------------
+  /// R8              R8_fiq      R8             R8        R8       R8
+  /// R9              R9_fiq      R9             R9        R9       R9
+  /// R10             R10_fiq     R10            R10       R10      R10
+  /// R11             R11_fiq     R11            R11       R11      R11
+  /// R12             R12_fiq     R12            R12       R12      R12
+  /// R13 (SP)        R13_fiq     R13_svc        R13_abt   R13_irq  R13_und
+  /// R14 (LR)        R14_fiq     R14_svc        R14_abt   R14_irq  R14_und
+  /// R15 (PC)        R15         R15            R15       R15      R15
+  /// -----------------------------------------------------------------------
+  /// CPSR            CPSR        CPSR           CPSR      CPSR     CPSR
+  /// --              SPSR_fiq    SPSR_svc       SPSR_abt  SPSR_irq SPSR_und
+  /// -----------------------------------------------------------------------
+  /// ```
   final _bankedRegisters = <Mode, Map<int, int>>{
     Mode.usr: {
       8: 0,
@@ -164,6 +206,7 @@ class Cpu {
       new Cpu.private(
         decoder,
         new Registers(),
+        new Psr(),
         read16,
         read32,
       );
@@ -184,6 +227,7 @@ class Cpu {
   Cpu.private(
     this._decoder,
     this._registers,
+    this._cpsr,
     this._read16,
     this._read32,
   );
@@ -192,7 +236,7 @@ class Cpu {
   Registers get gprs => _registers;
 
   /// CPSR.
-  Psr get cpsr => _registers.cpsr;
+  Psr get cpsr => _cpsr;
 
   /// The SPSR bits for the current [mode].
   int get spsr => _bankedRegisters[mode][_bankedSpsr];
@@ -204,19 +248,19 @@ class Cpu {
   }
 
   /// Whether the CPU is currently executing as ARM.
-  bool get isArm => _registers.cpsr.isArmState;
+  bool get isArm => cpsr.isArmState;
 
   /// Whether the CPU is currently executing as THUMB.
-  bool get isThumb => _registers.cpsr.isThumbState;
+  bool get isThumb => cpsr.isThumbState;
 
   /// Whether FIQ is disabled.
-  bool get isFiqDisabled => _registers.cpsr.f;
+  bool get isFiqDisabled => cpsr.f;
 
   /// Whether IRQ is disabled.
-  bool get isIrqDisabled => _registers.cpsr.i;
+  bool get isIrqDisabled => cpsr.i;
 
   /// Operating mode.
-  Mode get mode => _registers.cpsr.mode;
+  Mode get mode => cpsr.mode;
 
   /// Program counter for the CPU.
   int get pc => _registers.pc;
@@ -352,6 +396,6 @@ class Cpu {
       }
     }
 
-    _registers.cpsr = newCpsr;
+    _cpsr = newCpsr;
   }
 }

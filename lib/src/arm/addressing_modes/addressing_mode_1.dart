@@ -166,7 +166,7 @@ abstract class AddressingMode1 {
   ///
   /// Despite the name, this is actually an immediate shift.
   static ShifterValues register(Cpu cpu, {@required int rm}) =>
-      new ShifterValues(cpu.gprs[rm], cpu.gprs.cpsr.c);
+      new ShifterValues(cpu.gprs[rm], cpu.cpsr.c);
 
   /// Logical shift left by immediate.
   ///

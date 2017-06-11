@@ -15,6 +15,7 @@ class TracedCpu extends Cpu {
       : super.private(
           decoder,
           new Registers(),
+          new Psr(),
           read16,
           read32,
         );

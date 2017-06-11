@@ -30,7 +30,6 @@ class _ArmInstruction$ADC extends Instruction {
     final op2 = shiftValues.operand;
     final carryBit = btoi(cpu.cpsr.c);
     final opResult = op1.toUnsigned(32) + op2.toSigned(32) + carryBit;
-    final storedResult = gprsWrite(cpu.gprs, rd, opResult);
 
     if (s) {
       computePsr(cpu, rd, opResult, opResult, op1, op2 + carryBit);

@@ -4,42 +4,7 @@ import 'package:binary/binary.dart';
 import 'package:func/func.dart';
 import 'package:meta/meta.dart';
 
-/// ARM7/TDMI register set which is available in each mode.
-///
-/// There's a total of 37 registers (32bit), 31 general registers (`Rxx`) and
-/// 6 status registers (`xPSR`). Note that only some resisters are "banked",
-/// for example each mode has it's own `R14` register: called `R14`, `R14_fiq`,
-/// `R14_svc1, etc. for each mode respectively
-///
-/// However, other registers are not banked, for example, each mode is using the
-/// same `R0` register, so writing to `R0` will always affect the content of
-/// `R0` in other modes also.
-///
-/// ```txt
-/// System/User     FIQ         Supervisor     Abort     IRQ      Undefined
-/// -----------------------------------------------------------------------
-/// R0              R0          R0             R0        R0       R0
-/// R1              R1          R1             R1        R1       R1
-/// R2              R2          R2             R2        R2       R2
-/// R3              R3          R3             R3        R3       R3
-/// R4              R4          R4             R4        R4       R4
-/// R5              R5          R5             R5        R5       R5
-/// R6              R6          R6             R6        R6       R6
-/// R7              R7          R7             R7        R7       R7
-/// -----------------------------------------------------------------------
-/// R8              R8_fiq      R8             R8        R8       R8
-/// R9              R9_fiq      R9             R9        R9       R9
-/// R10             R10_fiq     R10            R10       R10      R10
-/// R11             R11_fiq     R11            R11       R11      R11
-/// R12             R12_fiq     R12            R12       R12      R12
-/// R13 (SP)        R13_fiq     R13_svc        R13_abt   R13_irq  R13_und
-/// R14 (LR)        R14_fiq     R14_svc        R14_abt   R14_irq  R14_und
-/// R15 (PC)        R15         R15            R15       R15      R15
-/// -----------------------------------------------------------------------
-/// CPSR            CPSR        CPSR           CPSR      CPSR     CPSR
-/// --              SPSR_fiq    SPSR_svc       SPSR_abt  SPSR_irq SPSR_und
-/// -----------------------------------------------------------------------
-/// ```
+/// The 16 ARM7/TDMI General Purpose Registers (Non-banked registers).
 class Registers {
   // Total size required to represent the registers.
   static final int _totalSize = Mode.modes.values.fold(0, (l, m) => l + m.size);
@@ -59,45 +24,16 @@ class Registers {
   // ignore: constant_identifier_names
   static const PC = 15;
 
-  /// Offset values for exception modes (modes that have SPSR).
-  @visibleForTesting
-  static const offsets = const {
-    Mode.fiq: 17,
-    Mode.svc: 25,
-    Mode.abt: 28,
-    Mode.irq: 31,
-    Mode.und: 34,
-  };
-
   final Uint32List _buffer;
-
-  Psr _cpsr;
 
   /// Create a new empty register set with a pre-specified operating [mode].
   factory Registers({Mode mode: Mode.svc}) {
-    final buffer = new Uint32List(_totalSize * Uint32List.BYTES_PER_ELEMENT);
-    final registers = new Registers.view(buffer)..reset();
+    final buffer = new Uint32List(16 * Uint32List.BYTES_PER_ELEMENT);
+    final registers = new Registers.view(buffer);
     return registers;
   }
 
-  /// Create a register set view using an existing 37 register 32-bit buffer.
-  ///
-  /// The following breakdown is assumed when using the memory:
-  ///
-  /// ```
-  /// 00 -> 15  = R00 -> R15
-  /// 16        = CPSR
-  /// 17 -> 23  = R08 -> R14_fiq
-  /// 24        = SPSR_fiq
-  /// 25 -> 26  = R13 -> R15_svc
-  /// 27        = SPSR_svc
-  /// 28 -> 29  = R13 -> R15_abt
-  /// 30        = SPSR_abt
-  /// 31 -> 32  = R13 -> R15_irq
-  /// 33        = SPSR_irq
-  /// 34 -> 35  = R13 -> R15_und
-  /// 36        = SPSR_und
-  /// ```
+  /// Create a register set view using an existing 16 register 32-bit buffer.
   Registers.view(this._buffer) {
     assert(() {
       if (_buffer == null) {
@@ -110,25 +46,6 @@ class Registers {
       }
       return true;
     });
-    _cpsr = new Psr.view(_buffer, 16);
-  }
-
-  /// Represents the CPSR.
-  Psr get cpsr => _cpsr;
-  set cpsr(Psr value) {
-    _cpsr = value;
-  }
-
-  /// Returns a flags register represents the SPSR for the processor.
-  ///
-  /// The returned instance differs depending on the [Psr.mode] in [cpsr].
-  ///
-  /// Some modes cannot access the SPSR, so a [StateError] is thrown.
-  /// TODO: Consider deleting.
-  Psr get spsr {
-    final offset = offsets[cpsr.mode];
-    assert(offset != null, 'Cannot access the SPSR as ${cpsr.mode}');
-    return new Psr.view(_buffer, offset + cpsr.mode.size);
   }
 
   /// Program counter (R15).
@@ -162,16 +79,7 @@ class Registers {
       }
       return true;
     });
-
-    // For R0-R7 or R15 short-circuit directly to the (shared) registers.
-    if (register < 8 || register == 15) {
-      return _buffer[register];
-    }
-
-    // For R8-R14, it's dependent on the operating mode.
-    //
-    // We apply an offset when reading from the underlying data structure.
-    return _buffer[offsets[cpsr.mode] + register];
+    return _buffer[register];
   }
 
   /// Sets a [register] [value].
@@ -185,19 +93,8 @@ class Registers {
       return true;
     });
 
-    // For R0-R7 or R15 short-circuit directly to the (shared) registers.
-    if (register < 8 || register == 15) {
-      _buffer[register] = value;
-      return;
-    }
-
     // For R8-R14, it's dependent on the operating mode.
-    _buffer[offsets[cpsr.mode] + register] = value;
-  }
-
-  /// Resets to the default value.
-  void reset() {
-    _cpsr.reset();
+    _buffer[register] = value;
   }
 
   /// Returns a copy of the data backing the registers.
