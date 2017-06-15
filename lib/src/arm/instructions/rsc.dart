@@ -29,7 +29,6 @@ class _ArmInstruction$RSC extends Instruction {
     final op2 = shiftValues.operand;
     final notCarryBit = ~btoi(cpu.cpsr.c);
     final opResult = op2.toUnsigned(32) - op1.toUnsigned(32) - notCarryBit;
-    final storedResult = gprsWrite(cpu.gprs, rd, opResult);
 
     if (s) {
       cpu.cpsr

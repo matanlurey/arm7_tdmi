@@ -264,4 +264,54 @@ void main() {
 
     expect(cpu.mode, Mode.usr);
   });
+
+  test(
+      'Banked registers should be switched in when a processor mode switch '
+      'occurs', () {
+    // Stack pointer is banked.
+    final sp_svc = 0x87654321;
+    final sp_usr = 0x11112222;
+
+    final rom = createRom([
+      0xe59fd01c, // ldr sp, [pc, #28]	; 5c <ResetException + 0x24>
+      // Switch to System mode
+      0xe10f3000, // mrs r3, CPSR
+      0xe383301f, // orr r3, r3, #31
+      0xe129f003, // msr CPSR_fc, r3
+      0xe59fd010, // ldr sp, [pc, #16]	; 60 <ResetException + 0x28>
+      // Switch to User mode
+      0xe10f3000, // mrs r3, CPSR
+      0xe3c3301f, // bic r3, r3, #31
+      0xe3833010, // orr r3, r3, #16
+      0xe129f003, // msr CPSR_fc, r3
+      0x87654321,
+      0x11112222
+    ]);
+
+    final cpu = new Cpu.noExecution(read32: (a) {
+      expect(a % 4, 0);
+      return rom[a ~/ 4];
+    })
+      ..step(); // Reset branch.
+    expect(cpu.pc, resetLabel);
+    // Cpu starts in 'supervisor' mode.
+    expect(cpu.mode, Mode.svc);
+    cpu.step();
+    expect(cpu.gprs[13], sp_svc);
+    for (var i = 0; i < 3; i++) {
+      cpu.step();
+    }
+    expect(cpu.mode, Mode.sys);
+    expect(cpu.gprs[13], isNot(sp_svc));
+
+    cpu.step();
+    expect(cpu.gprs[13], sp_usr);
+    for (var i = 0; i < 4; i++) {
+      cpu.step();
+    }
+    expect(cpu.mode, Mode.usr);
+    // User and System modes share register bank, so stack-pointer should still
+    // have the same value as before.
+    expect(cpu.gprs[13], sp_usr);
+  });
 }
